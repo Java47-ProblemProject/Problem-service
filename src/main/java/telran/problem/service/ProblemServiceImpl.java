@@ -15,7 +15,6 @@ import telran.problem.model.Problem;
 import telran.problem.dto.exceptions.ProblemNotFoundException;
 
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,6 +60,7 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                                             .orElseThrow(ProblemNotFoundException::new);
         problem.getReactions().addLike();
+        problem.updateRating();
         problemRepository.save(problem);
         return true;
     }
@@ -70,6 +70,7 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                                             .orElseThrow(ProblemNotFoundException::new);
         problem.getReactions().addDislike();
+        problem.updateRating();
         problemRepository.save(problem);
         return true;
     }
@@ -79,12 +80,26 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean subscribed(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
-        String userResponsed = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        problem.getSubscribers().add(userResponsed);
+        String userResponded = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
+        problem.getSubscribers().add(userResponded);
         problemRepository.save(problem);
        return true;
     }
 
+    @Override
+    public boolean donate(String problemId, DonationDto amount){
+        Problem problemToDonate = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
+        String userId = "Donation maker1"; // hardcoded, userId to be received from ProfileService via Kafka
+        DonationDto donation = modelMapper.map(amount,DonationDto.class);
+        donation.setAmount(amount.getAmount());
+        donation.setUserId(userId);
+        donation.setDateDonated(amount.getDateDonated());
+        problemToDonate.getDonationHistory().add(modelMapper.map(amount,Donation.class));
+        Double newCurrentAward = problemToDonate.getCurrentAward();
+        problemToDonate.setCurrentAward(newCurrentAward + donation.getAmount());
+        problemRepository.save(problemToDonate);
+        return true;
+    }
 
     @Override
     public boolean unsubscribed(String problemId) {
@@ -109,6 +124,20 @@ public class ProblemServiceImpl implements ProblemService {
         return problems.stream()
                 .map(problem -> modelMapper.map(problem, ProblemDto.class))
                 .collect(Collectors.toList());
+    }
+    @Override
+    public Double getCurrentAwardByProblemId(String problemId){
+        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
+        return problem.getCurrentAward();
+    }
+    @Override
+    public void updateRating(String problemId) {
+        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
+
+        if (problem != null) {
+            problem.updateRating();
+            problemRepository.save(problem);
+        }
     }
 
 }

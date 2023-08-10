@@ -29,6 +29,10 @@ public class Problem {
     protected Set<String> solutions;
     protected Set<String> subscribers;
 
+    public Problem(Double currentAward) {
+        this.currentAward = currentAward;
+    }
+
     public Problem() {
         this.rating = 0;
         this.currentAward = 0.0;
@@ -44,7 +48,22 @@ public class Problem {
     public void setCommunityNames(Set<String> communityNames) {
         this.communityNames = communityNames;
     }
-    public void setSubscribers(Set<String> subscribers){
-        this.subscribers = subscribers;
+
+
+    public void setCurrentAward(double v) {
+        this.currentAward = v;
     }
+
+
+
+    public void updateRating() {
+        double w1 = 1.0; // Weight for likes since we don't know what's going to be Weight value.
+        double w2 = 1.0; // Weight for likes since we don't know what's going to be Weight value.
+        int totalLikes = reactions != null ? reactions.getTotalLikes() : 0;
+        double totalDonations = donationHistory != null ?
+                donationHistory.stream().mapToDouble(Donation::getAmount).sum() : 0.0;
+        double newRating = w1 * totalLikes + w2 * totalDonations;
+        this.rating = (int) Math.round(newRating);
+    }
+
 }

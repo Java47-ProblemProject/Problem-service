@@ -59,10 +59,13 @@ public class ProblemController {
     public boolean unsubscribe(@PathVariable String problemId){
         return problemService.unsubscribed(problemId);
     }
-//    @PutMapping("/donate/{problemId}"){
-//        public boolean donate(@PathVariable problemId) {
-//        return problemService.donate(problemId);
-//        }
-//    }
+    @PutMapping("/donate/{problemId}")
+    public boolean donate(@PathVariable String problemId,@RequestBody DonationDto donation) {
+        return problemService.donate(problemId, donation);
+    }
+    @GetMapping("/getcurrentaward/{problemId}")
+    public Double getCurrAward(@PathVariable String problemId){
+        return problemService.getCurrentAwardByProblemId(problemId);
+    }
 }
 

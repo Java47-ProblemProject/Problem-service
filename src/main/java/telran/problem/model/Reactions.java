@@ -17,5 +17,9 @@ public class Reactions {
     public void addDislike(){
         dislikes++;
     }
+
+    public int getTotalLikes() {
+        return likes;
+    }
 }
 

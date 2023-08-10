@@ -1,7 +1,6 @@
 package telran.problem.dto;
 
 import lombok.*;
-import telran.problem.model.Donation;
 import telran.problem.model.Reactions;
 
 import java.time.LocalDateTime;
@@ -24,7 +23,7 @@ public class ProblemDto {
     protected Double currentAward;
     protected Reactions reactions;
 
-    protected Set<Donation> donationHistory;
+    protected Set<DonationDto> donationHistory;
 
     protected Set<String> comments;
 
