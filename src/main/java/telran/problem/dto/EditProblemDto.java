@@ -5,10 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
-@Setter
+
 
 public class EditProblemDto {
-    private String title;
-    private String details;
+    protected String title;
+    protected String details;
+    protected Set<String> communityNames;
+
 }

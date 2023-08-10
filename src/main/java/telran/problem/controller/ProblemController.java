@@ -3,10 +3,15 @@ package telran.problem.controller;
 
 import lombok.RequiredArgsConstructor;
 
+
 import org.springframework.web.bind.annotation.*;
 import telran.problem.dto.*;
 
 import telran.problem.service.ProblemService;
+
+
+import java.util.List;
+
 
 
 @RequiredArgsConstructor
@@ -14,19 +19,50 @@ import telran.problem.service.ProblemService;
 @RequestMapping("/problem")
 public class ProblemController {
 
+
     private final ProblemService problemService;
     @PostMapping("/createproblem")
-    public CreateProblemDto addProblem(@RequestBody CreateProblemDto problem) {
+    public ProblemDto addProblem(@RequestBody CreateProblemDto problem) {
         return problemService.addProblem(problem);
     }
+    @PutMapping("/editproblem/{userId}/{problemId}")
+    public ProblemDto editProblem(@RequestBody EditProblemDto problem, @PathVariable String userId, @PathVariable String problemId) {
+        return problemService.editProblem(problem, userId,problemId);
+    }
+    @DeleteMapping("/deleteproblem/{problemId}")
+    public ProblemDto deleteProblem(@PathVariable String problemId){
+        return problemService.deleteProblem(problemId);
+    }
+    @PutMapping("/likeproblem/{problemId}")
+    public boolean likeProblem(@PathVariable String problemId){
+        return problemService.addLike(problemId);
+    }
+    @PutMapping("/dislikeproblem/{problemId}")
+    public boolean dislikeProblem(@PathVariable String problemId){
+        return problemService.addDisLike(problemId);
+    }
+    @GetMapping("/getproblem/{problemId}")
+    public ProblemDto getProblem(@PathVariable String problemId){
+        return problemService.findProblemById(problemId);
+    }
 
-//    @PutMapping("/{problemId}")
-//    public ResponseEntity<EditProblemDto> editProblem(
-//            @PathVariable String problemId,
-//            @RequestBody EditProblemDto editProblemDto) {
-//        EditProblemDto updatedProblem = problemService.editProblem(problemId, editProblemDto);
-//        return ResponseEntity.ok(updatedProblem);
+    @GetMapping("/getproblems")
+    public List<ProblemDto> getProblems(){
+        return problemService.getProblems();
+    }
+
+    @PutMapping("/subscribeonproblem/{problemId}")
+    public boolean subscribe(@PathVariable String problemId){
+        return problemService.subscribed(problemId);
+    }
+    @PutMapping("/unsubscribeonproblem/{problemId}")
+    public boolean unsubscribe(@PathVariable String problemId){
+        return problemService.unsubscribed(problemId);
+    }
+//    @PutMapping("/donate/{problemId}"){
+//        public boolean donate(@PathVariable problemId) {
+//        return problemService.donate(problemId);
+//        }
 //    }
-
 }
 

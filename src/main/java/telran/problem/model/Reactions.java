@@ -11,13 +11,11 @@ public class Reactions {
     protected Integer likes = 0;
     protected Integer dislikes = 0;
 
-    public boolean addLike(){
+    public void addLike(){
         likes++;
-        return true;
     }
-    public boolean addDislike(){
+    public void addDislike(){
         dislikes++;
-        return true;
     }
 }
 

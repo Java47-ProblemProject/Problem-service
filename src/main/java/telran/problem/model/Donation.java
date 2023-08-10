@@ -1,16 +1,23 @@
 package telran.problem.model;
 
 import lombok.*;
+import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
+
 @Getter
-@Setter
+
 
 public class Donation {
+    @Id
     protected String userName;
-    protected Integer amount;
-    protected LocalDateTime date;
+    @Setter
+    protected Double amount;
+    protected LocalDateTime dateDonated;
+
+    public Donation() {
+        this.userName = userName;
+        //this.amount = amount;
+        this.dateDonated = LocalDateTime.now();
+    }
 }
