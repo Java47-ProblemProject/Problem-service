@@ -1,9 +1,9 @@
 package telran.problem.service;
 
-import telran.problem.dto.CreateProblemDto;
-import telran.problem.dto.DonationDto;
-import telran.problem.dto.EditProblemDto;
-import telran.problem.dto.ProblemDto;
+import telran.problem.dto.problems.CreateProblemDto;
+import telran.problem.dto.problems.DonationDto;
+import telran.problem.dto.problems.EditProblemDto;
+import telran.problem.dto.problems.ProblemDto;
 
 
 import java.util.List;

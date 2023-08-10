@@ -1,4 +1,4 @@
-package telran.problem.dto;
+package telran.problem.dto.problems;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
