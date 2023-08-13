@@ -18,7 +18,10 @@ import java.util.Set;
 public class Problem {
     @Id
     protected String id;
+    @Setter
     protected String author;
+    @Setter
+    protected String authorId;
     protected Integer rating;
     @Setter
     protected String title;

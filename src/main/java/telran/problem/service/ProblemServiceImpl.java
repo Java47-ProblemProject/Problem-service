@@ -4,7 +4,9 @@ package telran.problem.service;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import telran.problem.configuration.KafkaConsumer;
 import telran.problem.dao.ProblemRepository;
+import telran.problem.dto.accounting.ProfileDto;
 import telran.problem.dto.exceptions.ProblemNotFoundException;
 import telran.problem.dto.problems.CreateProblemDto;
 import telran.problem.dto.problems.DonationDto;
@@ -23,11 +25,14 @@ import java.util.stream.Collectors;
 public class ProblemServiceImpl implements ProblemService {
     final ProblemRepository problemRepository;
     final ModelMapper modelMapper;
-
+    final KafkaConsumer kafkaConsumer;
 
     @Override
     public ProblemDto addProblem(CreateProblemDto problemDto) {
         Problem problem = modelMapper.map(problemDto, Problem.class);
+        ProfileDto profile = kafkaConsumer.getProfile();
+        problem.setAuthor(profile.getUsername());
+        problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
         return modelMapper.map(problem, ProblemDto.class);
     }
@@ -36,9 +41,12 @@ public class ProblemServiceImpl implements ProblemService {
     public ProblemDto editProblem(EditProblemDto editProblemDto,String userId, String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
-        problem.setTitle(editProblemDto.getTitle());
-        problem.setDetails(editProblemDto.getDetails());
-        problem.setCommunityNames(editProblemDto.getCommunityNames());
+        ProfileDto profile = kafkaConsumer.getProfile();
+        if(problem.getAuthorId().equals(profile.getEmail())){
+            problem.setTitle(editProblemDto.getTitle());
+            problem.setDetails(editProblemDto.getDetails());
+            problem.setCommunityNames(editProblemDto.getCommunityNames());
+        }
         Problem updatedProblem = problemRepository.save(problem);
         return modelMapper.map(updatedProblem, ProblemDto.class);
     }
