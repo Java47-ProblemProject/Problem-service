@@ -19,7 +19,13 @@ public class Reactions {
     }
 
     public int getTotalLikes() {
-        return likes;
+        return likes + dislikes;
+    }
+
+    public void subtractLike() {
+        if (likes > 0) {
+            likes--;
+        }
     }
 }
 

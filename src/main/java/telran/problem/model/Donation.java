@@ -8,9 +8,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 
 public class Donation {
-
+    @Setter
     protected String userId;
+    @Setter
     protected Double amount;
+    @Setter
     protected LocalDateTime dateDonated;
 
 }

@@ -55,23 +55,30 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
 
-    @Override
-    public boolean addLike(String problemId) {
-        Problem problem = problemRepository.findById(problemId)
-                                            .orElseThrow(ProblemNotFoundException::new);
-        problem.getReactions().addLike();
-        problem.updateRating();
-        problemRepository.save(problem);
-        return true;
-    }
 
     @Override
     public boolean addDisLike(String problemId) {
         Problem problem = problemRepository.findById(problemId)
-                                            .orElseThrow(ProblemNotFoundException::new);
+                .orElseThrow(ProblemNotFoundException::new);
+
+        int initialLikes = problem.getReactions().getLikes();
+        int initialDislikes = problem.getReactions().getDislikes();
+
         problem.getReactions().addDislike();
         problem.updateRating();
         problemRepository.save(problem);
+
+        int finalLikes = problem.getReactions().getLikes();
+        int finalDislikes = problem.getReactions().getDislikes();
+
+        if (initialLikes == finalLikes && initialDislikes == finalDislikes) {
+            return false;
+        }
+
+        if (initialLikes > finalLikes) {
+            problem.getReactions().subtractLike();
+        }
+
         return true;
     }
 
@@ -80,12 +87,27 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean subscribed(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
-        String userResponded = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        problem.getSubscribers().add(userResponded);
+        String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
+        Set<String> subs = problem.getSubscribers();
+        if(subs.contains(userId)) {
+            return false;
+        }
+        subs.add(userId);
         problemRepository.save(problem);
-       return true;
+        unsubscribed(problemId);
+        return true;
     }
-
+    @Override
+    public boolean unsubscribed(String problemId) {
+        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
+        String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
+        Set<String> subs =  problem.getSubscribers();
+        boolean deleted = subs.remove(userId);
+        if(deleted){
+            problemRepository.save(problem);
+        }
+        return deleted;
+    }
     @Override
     public boolean donate(String problemId, DonationDto amount){
         Problem problemToDonate = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
@@ -100,16 +122,6 @@ public class ProblemServiceImpl implements ProblemService {
         problemRepository.save(problemToDonate);
         return true;
     }
-
-    @Override
-    public boolean unsubscribed(String problemId) {
-        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
-        String userToBeUnsibscribed = "Blah-blah-blah";// hardcoded, userId to be received from ProfileService via Kafka
-        boolean deletedSuccessfully = problem.getSubscribers().remove(userToBeUnsibscribed);
-        problemRepository.save(problem);
-        return deletedSuccessfully;
-    }
-
     @Override
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId)
