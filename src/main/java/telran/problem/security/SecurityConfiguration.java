@@ -6,7 +6,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-
 @Configuration
 public class SecurityConfiguration {
     @Bean
@@ -18,10 +17,10 @@ public class SecurityConfiguration {
                 .permitAll()
 //                //User section//
                 .requestMatchers(HttpMethod.PUT, "/problem/editproblem/{userId}/{problemid}")
-                .access("#userId == authentication.name")
+                .access("@customSecurity.checkProblemAuthor(problemId, authorId)")
 
                 .anyRequest().permitAll()
-//                .authenticated()
+                //.authenticated()
         );
         return http.build();
     }

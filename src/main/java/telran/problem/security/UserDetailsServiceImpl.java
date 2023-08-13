@@ -18,15 +18,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         ProfileDto profile = kafkaConsumer.getProfile();
-        System.out.println(profile.getEmail());
-        User user = new User(profile.getEmail(), profile.getPassword(), AuthorityUtils.createAuthorityList(profile.getRoles()));
-        User user1 =  new User("Unknown","Unknown",AuthorityUtils.createAuthorityList());
         if(profile != null) {
-            System.out.println(user);
-            return user;
+         return new User(profile.getEmail(), profile.getPassword(), AuthorityUtils.createAuthorityList(profile.getRoles()));
         }
-        System.out.println(user1);
-        return user1;
+        return new User("Unknown","Unknown",AuthorityUtils.createAuthorityList());
     }
 
 

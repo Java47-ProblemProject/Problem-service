@@ -3,6 +3,8 @@ package telran.problem.service;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import telran.problem.configuration.KafkaConsumer;
 import telran.problem.dao.ProblemRepository;
@@ -34,6 +36,9 @@ public class ProblemServiceImpl implements ProblemService {
         problem.setAuthor(profile.getUsername());
         problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        System.out.println("Authenticated username: "+username);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
