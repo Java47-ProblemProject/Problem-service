@@ -1,7 +1,6 @@
 package telran.problem.dto.problems;
 
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 

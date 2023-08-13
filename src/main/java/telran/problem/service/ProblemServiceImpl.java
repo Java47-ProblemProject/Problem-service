@@ -1,22 +1,20 @@
 package telran.problem.service;
 
 
-
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import telran.problem.dao.ProblemRepository;
+import telran.problem.dto.exceptions.ProblemNotFoundException;
 import telran.problem.dto.problems.CreateProblemDto;
 import telran.problem.dto.problems.DonationDto;
 import telran.problem.dto.problems.EditProblemDto;
 import telran.problem.dto.problems.ProblemDto;
 import telran.problem.model.Donation;
 import telran.problem.model.Problem;
-import telran.problem.dto.exceptions.ProblemNotFoundException;
 
-
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,7 +52,15 @@ public class ProblemServiceImpl implements ProblemService {
         return modelMapper.map(problem, ProblemDto.class);
     }
 
-
+    @Override
+    public boolean addLike(String problemId) {
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(ProblemNotFoundException::new);
+        problem.getReactions().addLike();
+        problem.updateRating();
+        problemRepository.save(problem);
+        return true;
+    }
 
     @Override
     public boolean addDisLike(String problemId) {
@@ -88,37 +94,35 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
         String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        Set<String> subs = problem.getSubscribers();
-        if(subs.contains(userId)) {
-            return false;
+        if(problem.getSubscribers().contains(userId)){
+            return  false;
         }
-        subs.add(userId);
+        problem.addSubs(userId);
         problemRepository.save(problem);
-        unsubscribed(problemId);
         return true;
     }
     @Override
     public boolean unsubscribed(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        Set<String> subs =  problem.getSubscribers();
-        boolean deleted = subs.remove(userId);
-        if(deleted){
-            problemRepository.save(problem);
+        if (problem.getSubscribers().contains(userId)){
+            return false;
         }
-        return deleted;
+        problem.removeSubs(userId);
+        problemRepository.save(problem);
+
+        return true;
     }
     @Override
     public boolean donate(String problemId, DonationDto amount){
         Problem problemToDonate = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         String userId = "Donation maker1"; // hardcoded, userId to be received from ProfileService via Kafka
-        DonationDto donation = modelMapper.map(amount,DonationDto.class);
+        Donation donation = modelMapper.map(amount,Donation.class);
         donation.setAmount(amount.getAmount());
         donation.setUserId(userId);
-        donation.setDateDonated(amount.getDateDonated());
-        problemToDonate.getDonationHistory().add(modelMapper.map(amount,Donation.class));
-        Double newCurrentAward = problemToDonate.getCurrentAward();
-        problemToDonate.setCurrentAward(newCurrentAward + donation.getAmount());
+        donation.setDateDonated(LocalDateTime.now());
+        problemToDonate.addDonationHistory(donation);
+        problemToDonate.checkCurrentAward();
         problemRepository.save(problemToDonate);
         return true;
     }
@@ -129,13 +133,10 @@ public class ProblemServiceImpl implements ProblemService {
         return modelMapper.map(problem, ProblemDto.class);
     }
 
-
     @Override
-    public List<ProblemDto> getProblems() {
-        Set<Problem> problems = problemRepository.findAllByAuthorIsNotNull();
-        return problems.stream()
-                .map(problem -> modelMapper.map(problem, ProblemDto.class))
-                .collect(Collectors.toList());
+    public List<ProblemDto> getProblems(){
+        return problemRepository.findAll().stream().map(e -> modelMapper.map(e,ProblemDto.class))
+                                                                        .collect(Collectors.toList());
     }
     @Override
     public Double getCurrentAwardByProblemId(String problemId){
@@ -145,7 +146,6 @@ public class ProblemServiceImpl implements ProblemService {
     @Override
     public void updateRating(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
-
         if (problem != null) {
             problem.updateRating();
             problemRepository.save(problem);
