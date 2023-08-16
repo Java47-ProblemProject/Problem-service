@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor //must be deleted after test
 @NoArgsConstructor //must be deleted after test
@@ -22,6 +24,15 @@ public class ProfileDto {
     protected Set<String> roles;
     protected String avatar;
     protected StatsDto stats;
-    protected Set<ActivityDto> activities;
+    protected Map<String, ActivityDto> activities;
     protected Double wallet;
+
+    public void addActivity(String id, ActivityDto activity) {
+        this.activities.put(id, activity);
+    }
+
+    public void removeActivity(String id) {
+        this.activities.remove(id);
+    }
+
 }

@@ -12,21 +12,19 @@ public class Reactions {
     protected Integer dislikes = 0;
 
     public void addLike() {
-        likes++;
+        this.likes++;
     }
 
     public void addDislike() {
-        dislikes++;
+        this.dislikes++;
     }
 
-    public int getTotalLikes() {
-        return likes + dislikes;
+    public void removeLike() {
+        this.likes--;
     }
 
-    public void subtractLike() {
-        if (likes > 0) {
-            likes--;
-        }
+    public void removeDislike() {
+        this.dislikes--;
     }
 }
 

@@ -75,5 +75,11 @@ public class ProblemController {
     public Double getCurrAward(@PathVariable String problemId) {
         return problemService.getCurrentAwardByProblemId(problemId);
     }
+
+    //Administrative block
+    @DeleteMapping("/deleteproblem/{problemId}")
+    public ProblemDto deleteProblem(@PathVariable String problemId) {
+        return problemService.deleteProblem(problemId);
+    }
 }
 

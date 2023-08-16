@@ -71,12 +71,13 @@ public class Problem {
     }
 
     public void updateRating() {
-        double w1 = 1.0; // Weight for likes since we don't know what's going to be Weight value.
-        double w2 = 1.0; // Weight for likes since we don't know what's going to be Weight value.
-        int totalLikes = reactions != null ? reactions.getTotalLikes() : 0;
-        double totalDonations = donationHistory != null ?
-                donationHistory.stream().mapToDouble(Donation::getAmount).sum() : 0.0;
-        double newRating = w1 * totalLikes + w2 * totalDonations;
+        double w1 = 1.0;
+        double w2 = 1.0;
+        int likes = this.reactions.getLikes();
+        int disLikes = this.reactions.getDislikes();
+        double totalDonations = donationHistory.stream().mapToDouble(Donation::getAmount).sum();
+        int total = likes - disLikes;
+        double newRating = (total > 0) ? w1 * total + w2 * totalDonations : w1 * 0 + w2 * totalDonations;
         this.rating = (int) Math.round(newRating);
     }
 

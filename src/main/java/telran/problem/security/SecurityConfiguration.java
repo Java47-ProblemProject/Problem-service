@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 
@@ -15,11 +16,14 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.httpBasic(Customizer.withDefaults());
         http.csrf(AbstractHttpConfigurer::disable);
-        http.authorizeHttpRequests(authorize -> authorize
+        http.authorizeRequests(authorize -> authorize
 //                       //User section//
-                        .requestMatchers(HttpMethod.PUT, "/problem/editproblem/{userId}/{problemid}")
-                        .access(new WebExpressionAuthorizationManager("@customSecurity.checkProblemAuthor(#problemid, #userId)"))
-
+                        .requestMatchers(HttpMethod.PUT, "/problem/editproblem/{authorId}/{problemId}")
+                            .access("@customSecurity.checkProblemAuthor(#problemId, #authorId)")
+                        .requestMatchers(HttpMethod.DELETE,"/problem/deleteproblem/{authorId}/{problemId}")
+                            .access("@customSecurity.checkProblemAuthor(#problemId, #authorId)")
+                        .requestMatchers(HttpMethod.DELETE, "/problem/deleteproblem/*")
+                            .access("hasRole('ADMINISTRATOR')")
                         .anyRequest()
                         .authenticated()
         );
