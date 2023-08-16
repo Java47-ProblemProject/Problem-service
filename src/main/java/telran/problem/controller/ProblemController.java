@@ -2,16 +2,12 @@ package telran.problem.controller;
 
 
 import lombok.RequiredArgsConstructor;
-
-
 import org.springframework.web.bind.annotation.*;
-
 import telran.problem.dto.problems.CreateProblemDto;
 import telran.problem.dto.problems.DonationDto;
 import telran.problem.dto.problems.EditProblemDto;
 import telran.problem.dto.problems.ProblemDto;
 import telran.problem.service.ProblemService;
-
 
 import java.util.List;
 
@@ -32,9 +28,13 @@ public class ProblemController {
     public ProblemDto editProblem(@RequestBody EditProblemDto problem, @PathVariable String userId, @PathVariable String problemId) {
         return problemService.editProblem(problem, userId,problemId);
     }
+    @DeleteMapping("/deleteproblem/{userId}/{problemId}")
+    public ProblemDto deleteProblem(@PathVariable String problemId, String userId){
+        return problemService.deleteProblem(problemId,userId);
+    }
     @DeleteMapping("/deleteproblem/{problemId}")
-    public ProblemDto deleteProblem(@PathVariable String problemId){
-        return problemService.deleteProblem(problemId);
+    public ProblemDto deleteProblemAdmin(@PathVariable String problemId){
+        return problemService.deleteProblemAdmin(problemId);
     }
     @PutMapping("/likeproblem/{problemId}")
     public boolean likeProblem(@PathVariable String problemId){

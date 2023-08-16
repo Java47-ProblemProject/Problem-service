@@ -14,9 +14,9 @@ import java.util.NoSuchElementException;
 public class CustomSecurity {
     final KafkaConsumer kafkaConsumer;
     final ProblemRepository problemRepository;
-    public boolean checkProblemAuthor(String problemId,String authorId){
-        Problem problem =  problemRepository.findById(problemId).orElseThrow(NoSuchElementException::new);
+    public boolean checkProblemAuthor(String problemId){
+        Problem problem = problemRepository.findById(problemId).orElseThrow(NoSuchElementException::new);
         ProfileDto user = kafkaConsumer.getProfile();
-        return user.getEmail().equals(problem.getAuthorId()) && authorId.equals(user.getEmail());
+        return user.getEmail().equals(problem.getAuthorId());
     }
 }

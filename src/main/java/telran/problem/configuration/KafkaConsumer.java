@@ -3,13 +3,13 @@ package telran.problem.configuration;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
 import telran.problem.dto.accounting.ProfileDto;
 
 import java.util.function.Consumer;
 
 @Getter
-@Configuration
+@Service
 public class KafkaConsumer {
     @Setter
     ProfileDto profile;

@@ -1,6 +1,7 @@
 package telran.problem.dto.problems;
 
-import lombok.*;
+import lombok.Setter;
+
 import java.util.Set;
 
 @Setter

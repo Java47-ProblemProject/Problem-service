@@ -38,16 +38,17 @@ public class ProblemServiceImpl implements ProblemService {
         problem = problemRepository.save(problem);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        System.out.println("Authenticated username: "+username);
+        authentication.getAuthorities().forEach(System.out::println);
+        System.out.println("Authenticated username: " + username);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
     @Override
-    public ProblemDto editProblem(EditProblemDto editProblemDto,String userId, String problemId) {
+    public ProblemDto editProblem(EditProblemDto editProblemDto, String userId, String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        if(problem.getAuthorId().equals(profile.getEmail())){
+        if (problem.getAuthorId().equals(profile.getEmail())) {
             problem.setTitle(editProblemDto.getTitle());
             problem.setDetails(editProblemDto.getDetails());
             problem.setCommunityNames(editProblemDto.getCommunityNames());
@@ -58,10 +59,18 @@ public class ProblemServiceImpl implements ProblemService {
 
 
     @Override
-    public ProblemDto deleteProblem(String problemId) {
+    public ProblemDto deleteProblem(String problemId, String userId) {
         Problem problem = problemRepository.findById(problemId)
-                                            .orElseThrow(ProblemNotFoundException::new);
-        problemRepository.delete(problem);
+                .orElseThrow(ProblemNotFoundException::new);
+        ProfileDto profile = kafkaConsumer.getProfile();
+        try {
+            if (profile.getEmail().equals(problem.getAuthorId()) ){
+                //&& userId.equals(profile.getEmail())) {
+                problemRepository.delete(problem);
+            }
+        } catch (Exception e) {
+            throw new ProblemNotFoundException();
+        }
         return modelMapper.map(problem, ProblemDto.class);
     }
 
@@ -107,18 +116,19 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
         String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        if(problem.getSubscribers().contains(userId)){
-            return  false;
+        if (problem.getSubscribers().contains(userId)) {
+            return false;
         }
         problem.addSubs(userId);
         problemRepository.save(problem);
         return true;
     }
+
     @Override
     public boolean unsubscribed(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        if (problem.getSubscribers().contains(userId)){
+        if (problem.getSubscribers().contains(userId)) {
             return false;
         }
         problem.removeSubs(userId);
@@ -126,11 +136,12 @@ public class ProblemServiceImpl implements ProblemService {
 
         return true;
     }
+
     @Override
-    public boolean donate(String problemId, DonationDto amount){
+    public boolean donate(String problemId, DonationDto amount) {
         Problem problemToDonate = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         String userId = "Donation maker1"; // hardcoded, userId to be received from ProfileService via Kafka
-        Donation donation = modelMapper.map(amount,Donation.class);
+        Donation donation = modelMapper.map(amount, Donation.class);
         donation.setAmount(amount.getAmount());
         donation.setUserId(userId);
         donation.setDateDonated(LocalDateTime.now());
@@ -139,23 +150,26 @@ public class ProblemServiceImpl implements ProblemService {
         problemRepository.save(problemToDonate);
         return true;
     }
+
     @Override
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId)
-                                            .orElseThrow(ProblemNotFoundException::new);
+                .orElseThrow(ProblemNotFoundException::new);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
     @Override
-    public List<ProblemDto> getProblems(){
-        return problemRepository.findAll().stream().map(e -> modelMapper.map(e,ProblemDto.class))
-                                                                        .collect(Collectors.toList());
+    public List<ProblemDto> getProblems() {
+        return problemRepository.findAll().stream().map(e -> modelMapper.map(e, ProblemDto.class))
+                .collect(Collectors.toList());
     }
+
     @Override
-    public Double getCurrentAwardByProblemId(String problemId){
+    public Double getCurrentAwardByProblemId(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         return problem.getCurrentAward();
     }
+
     @Override
     public void updateRating(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
@@ -165,4 +179,11 @@ public class ProblemServiceImpl implements ProblemService {
         }
     }
 
+    @Override
+    public ProblemDto deleteProblemAdmin(String problemId) {
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(ProblemNotFoundException::new);
+        problemRepository.delete(problem);
+        return modelMapper.map(problem, ProblemDto.class);
+    }
 }

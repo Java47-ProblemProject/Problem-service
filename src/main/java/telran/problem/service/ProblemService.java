@@ -5,7 +5,6 @@ import telran.problem.dto.problems.DonationDto;
 import telran.problem.dto.problems.EditProblemDto;
 import telran.problem.dto.problems.ProblemDto;
 
-
 import java.util.List;
 
 
@@ -15,7 +14,7 @@ public interface ProblemService {
     ProblemDto addProblem(CreateProblemDto problemDto);
 
     ProblemDto editProblem(EditProblemDto problem,String userId,String problemId);
-    ProblemDto deleteProblem(String problemId);
+    ProblemDto deleteProblem(String problemId, String userId);
 
     boolean addLike(String problemId);
     boolean addDisLike(String problemId);
@@ -35,4 +34,6 @@ public interface ProblemService {
 
 
     Double getCurrentAwardByProblemId(String problemId);
+
+    ProblemDto deleteProblemAdmin(String problemId);
 }

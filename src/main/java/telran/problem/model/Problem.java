@@ -1,5 +1,6 @@
 package telran.problem.model;
 
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,7 @@ import java.util.Set;
 @Getter
 @EqualsAndHashCode(of = "id")
 @Document(collection = "problems")
+@AllArgsConstructor
 public class Problem {
     @Id
     protected String id;
@@ -38,9 +40,8 @@ public class Problem {
     protected Set<String> solutions;
     protected Set<String> subscribers;
 
-    public Problem(Double currentAward) {
-        this.currentAward = currentAward;
-    }
+    protected String type;
+
 
     public Problem() {
         this.rating = 0;
@@ -52,6 +53,7 @@ public class Problem {
         this.solutions = new HashSet<>();
         this.subscribers = new HashSet<>();
         this.dateCreated = LocalDateTime.now();
+        this.type = "problem";
     }
     public void addSolution(String solutionId){this.solutions.add(solutionId);}
     public void addComment(String commentId){
