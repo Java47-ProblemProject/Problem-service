@@ -10,29 +10,16 @@ import java.util.List;
 
 
 public interface ProblemService {
-
-
     ProblemDto addProblem(CreateProblemDto problemDto);
-
     ProblemDto editProblem(EditProblemDto problem,String userId,String problemId);
-    ProblemDto deleteProblem(String problemId);
-
+    ProblemDto deleteProblem(String problemId, String userId);
     boolean addLike(String problemId);
     boolean addDisLike(String problemId);
-
     boolean subscribed(String problemId);
-
     void updateRating(String problemId);
-
     boolean donate(String problemId, DonationDto donation);
-
-
     boolean unsubscribed(String problemId);
-
     ProblemDto findProblemById(String problemId);
-
     List<ProblemDto> getProblems();
-
-
     Double getCurrentAwardByProblemId(String problemId);
 }

@@ -1,11 +1,12 @@
 package telran.problem.dto.exceptions;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.io.Serial;
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class ProblemNotFoundException extends RuntimeException{
 
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class ProblemNotFoundException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = -6695760736015419739L;
 

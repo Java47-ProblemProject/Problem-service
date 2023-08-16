@@ -4,7 +4,6 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-
 @Getter
 public class DonationDto {
     protected String userId;
