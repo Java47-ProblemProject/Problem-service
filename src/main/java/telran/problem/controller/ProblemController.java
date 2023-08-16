@@ -58,12 +58,12 @@ public class ProblemController {
 
     @PutMapping("/subscribeonproblem/{problemId}")
     public boolean subscribe(@PathVariable String problemId) {
-        return problemService.subscribed(problemId);
+        return problemService.subscribe(problemId);
     }
 
     @PutMapping("/unsubscribeonproblem/{problemId}")
     public boolean unsubscribe(@PathVariable String problemId) {
-        return problemService.unsubscribed(problemId);
+        return problemService.unsubscribe(problemId);
     }
 
     @PutMapping("/donate/{problemId}")

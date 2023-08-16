@@ -5,7 +5,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
 public class Donation {
     @Setter
     protected String userId;
@@ -13,4 +12,8 @@ public class Donation {
     protected Double amount;
     @Setter
     protected LocalDateTime dateDonated;
+
+    public Donation() {
+        this.dateDonated = LocalDateTime.now();
+    }
 }

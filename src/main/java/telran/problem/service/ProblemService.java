@@ -15,9 +15,9 @@ public interface ProblemService {
     ProblemDto deleteProblem(String problemId, String userId);
     boolean addLike(String problemId);
     boolean addDisLike(String problemId);
-    boolean subscribed(String problemId);
+    boolean subscribe(String problemId);
     boolean donate(String problemId, DonationDto donation);
-    boolean unsubscribed(String problemId);
+    boolean unsubscribe(String problemId);
     ProblemDto findProblemById(String problemId);
     List<ProblemDto> getProblems();
     Double getCurrentAwardByProblemId(String problemId);

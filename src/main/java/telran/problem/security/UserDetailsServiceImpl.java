@@ -23,6 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         String encryptedEmail = EmailEncryptionConfiguration.encryptAndEncodeUserId(email);
+        //FOR TEST ONLY --->
         //kafkaConsumer.addUser1(null);
         ProfileDto profile = kafkaConsumer.getProfile();
         System.out.println(profile);

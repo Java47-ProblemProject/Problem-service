@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import telran.problem.configuration.KafkaConsumer;
+import telran.problem.configuration.KafkaProducer;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.dto.accounting.ActivityDto;
 import telran.problem.dto.accounting.ProfileDto;
@@ -18,7 +19,6 @@ import telran.problem.dto.problems.ProblemDto;
 import telran.problem.model.Donation;
 import telran.problem.model.Problem;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +29,7 @@ public class ProblemServiceImpl implements ProblemService {
     final ProblemRepository problemRepository;
     final ModelMapper modelMapper;
     final KafkaConsumer kafkaConsumer;
+    final KafkaProducer kafkaProducer;
 
     @Override
     public ProblemDto addProblem(CreateProblemDto problemDto) {
@@ -37,9 +38,9 @@ public class ProblemServiceImpl implements ProblemService {
         problem.setAuthor(profile.getUsername());
         problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
-        profile.addActivity(problem.getId(), new ActivityDto(false,false));
+        profile.addActivity(problem.getId(), new ActivityDto(false, false));
         kafkaConsumer.setProfile(profile);
-        //send profile back to Accounting to update it in ProfileRepository.
+        kafkaProducer.setProfile(profile);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
@@ -66,8 +67,10 @@ public class ProblemServiceImpl implements ProblemService {
         if (problem.getAuthorId().equals(profile.getEmail()) && userId.equals(profile.getEmail())) {
             problemRepository.delete(problem);
             profile.removeActivity(problemId);
+
+            //here should be implemented method to delete THIS problem from every person that exists it.
             kafkaConsumer.setProfile(profile);
-            //send profile back to Accounting to update it in ProfileRepository.
+            kafkaProducer.setProfile(profile);
             return modelMapper.map(problem, ProblemDto.class);
         } else throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem");
     }
@@ -91,7 +94,7 @@ public class ProblemServiceImpl implements ProblemService {
 
             profile.addActivity(problemId, activity);
             kafkaConsumer.setProfile(profile);
-            // send profile back to Accounting to update it in ProfileRepository.
+            kafkaProducer.setProfile(profile);
             return true;
         }
         return false;
@@ -114,7 +117,7 @@ public class ProblemServiceImpl implements ProblemService {
             problemRepository.save(problem);
             profile.addActivity(problemId, activity);
             kafkaConsumer.setProfile(profile);
-            // send profile back to Accounting to update it in ProfileRepository.
+            kafkaProducer.setProfile(profile);
             return true;
         }
         return false;
@@ -122,41 +125,56 @@ public class ProblemServiceImpl implements ProblemService {
 
 
     @Override
-    public boolean subscribed(String problemId) {
+    public boolean subscribe(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
-        String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        if (problem.getSubscribers().contains(userId)) {
-            return false;
+        ProfileDto profile = kafkaConsumer.getProfile();
+        if (!profile.getActivities().containsKey(problemId)) {
+            profile.addActivity(problemId, new ActivityDto(false, false));
+            kafkaConsumer.setProfile(profile);
+            kafkaProducer.setProfile(profile);
         }
-        problem.addSubscriber(userId);
-        problemRepository.save(problem);
-        return true;
+        if (!problem.getSubscribers().contains(profile.getEmail())) {
+            problem.addSubscriber(profile.getEmail());
+            problemRepository.save(problem);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public boolean unsubscribed(String problemId) {
+    public boolean unsubscribe(String problemId) {
+        //Should be repaired!!! After it had been used, it removes liked problem from activities
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
-        String userId = "Blah-blah-blah"; // hardcoded, userId to be received from ProfileService via Kafka
-        if (problem.getSubscribers().contains(userId)) {
-            return false;
+        ProfileDto profile = kafkaConsumer.getProfile();
+        if (profile.getActivities().containsKey(problemId)) {
+            profile.removeActivity(problemId);
+            kafkaConsumer.setProfile(profile);
+            kafkaProducer.setProfile(profile);
         }
-        problem.removeSubscriber(userId);
-        problemRepository.save(problem);
-        return true;
+        if (problem.getSubscribers().contains(profile.getEmail())) {
+            problem.removeSubscriber(profile.getEmail());
+            problemRepository.save(problem);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean donate(String problemId, DonationDto amount) {
-        Problem problemToDonate = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
-        String userId = "Donation maker1"; // hardcoded, userId to be received from ProfileService via Kafka
+        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
+        ProfileDto profile = kafkaConsumer.getProfile();
         Donation donation = modelMapper.map(amount, Donation.class);
         donation.setAmount(amount.getAmount());
-        donation.setUserId(userId);
-        donation.setDateDonated(LocalDateTime.now());
-        problemToDonate.addDonation(donation);
-        problemToDonate.checkCurrentAward();
-        problemRepository.save(problemToDonate);
+        donation.setUserId(profile.getEmail());
+        problem.addDonation(donation);
+        problem.checkCurrentAward();
+        problemRepository.save(problem);
+        if (!profile.getActivities().containsKey(problemId)) {
+            profile.addActivity(problemId, new ActivityDto(false, false));
+            kafkaConsumer.setProfile(profile);
+            kafkaProducer.setProfile(profile);
+        }
         return true;
     }
 
@@ -186,6 +204,10 @@ public class ProblemServiceImpl implements ProblemService {
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (problem.getAuthorId().equals(profile.getEmail()) || profile.getRoles().contains("ADMINISTRATOR")) {
+
+            //here should be implemented method to delete THIS problem from every person that exists it.
+            kafkaConsumer.setProfile(profile);
+            kafkaProducer.setProfile(profile);
             problemRepository.delete(problem);
             return modelMapper.map(problem, ProblemDto.class);
         } else
