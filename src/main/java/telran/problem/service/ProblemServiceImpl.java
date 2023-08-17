@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import telran.problem.configuration.KafkaConsumer;
 import telran.problem.configuration.KafkaProducer;
@@ -32,6 +33,7 @@ public class ProblemServiceImpl implements ProblemService {
     final KafkaProducer kafkaProducer;
 
     @Override
+    @Transactional
     public ProblemDto addProblem(CreateProblemDto problemDto) {
         Problem problem = modelMapper.map(problemDto, Problem.class);
         ProfileDto profile = kafkaConsumer.getProfile();
@@ -45,6 +47,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional
     public ProblemDto editProblem(EditProblemDto editProblemDto, String userId, String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -60,6 +63,7 @@ public class ProblemServiceImpl implements ProblemService {
 
 
     @Override
+    @Transactional
     public ProblemDto deleteProblem(String problemId, String userId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -75,6 +79,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional
     public boolean addLike(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -97,6 +102,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional
     public boolean addDisLike(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -120,6 +126,7 @@ public class ProblemServiceImpl implements ProblemService {
 
 
     @Override
+    @Transactional
     public boolean subscribe(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -137,6 +144,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional
     public boolean unsubscribe(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
@@ -154,6 +162,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional
     public boolean donate(String problemId, DonationDto amount) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
@@ -171,6 +180,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
@@ -178,12 +188,14 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProblemDto> getProblems() {
         return problemRepository.findAll().stream().map(e -> modelMapper.map(e, ProblemDto.class))
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Double getCurrentAwardByProblemId(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         return problem.getCurrentAward();
@@ -191,6 +203,7 @@ public class ProblemServiceImpl implements ProblemService {
 
     //Administrative block
     @Override
+    @Transactional
     public ProblemDto deleteProblem(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
