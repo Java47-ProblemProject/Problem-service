@@ -10,5 +10,4 @@ import java.util.Set;
 
 @Repository
 public interface ProblemRepository extends MongoRepository<Problem,String>{
-    Set<Problem> findAllByAuthorIsNotNull();
 }

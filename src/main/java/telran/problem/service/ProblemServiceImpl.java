@@ -38,9 +38,9 @@ public class ProblemServiceImpl implements ProblemService {
         problem.setAuthor(profile.getUsername());
         problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
-        profile.addActivity(problem.getId(), new ActivityDto(false, false));
-        kafkaConsumer.setProfile(profile);
-        kafkaProducer.setProfile(profile);
+        profile.addActivity(problem.getId(), new ActivityDto(problem.getType(), false, false));
+        profile.addFormulatedProblem();
+        editProfile(profile);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
@@ -67,10 +67,9 @@ public class ProblemServiceImpl implements ProblemService {
         if (problem.getAuthorId().equals(profile.getEmail()) && userId.equals(profile.getEmail())) {
             problemRepository.delete(problem);
             profile.removeActivity(problemId);
-
-            //here should be implemented method to delete THIS problem from every person that exists it.
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            profile.removeFormulatedProblem();
+            kafkaProducer.setProblemIdToDelete(problemId);
+            editProfile(profile);
             return modelMapper.map(problem, ProblemDto.class);
         } else throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem");
     }
@@ -80,8 +79,7 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        ActivityDto activity = profile.getActivities().computeIfAbsent(problemId, a -> new ActivityDto(false, false));
-        profile.getActivities().entrySet().forEach(System.out::println);
+        ActivityDto activity = profile.getActivities().computeIfAbsent(problemId, a -> new ActivityDto(Problem.class.getSimpleName().toUpperCase(), false, false));
         if (!activity.getLiked()) {
             activity.setLiked(true);
             if (activity.getDisliked()) {
@@ -91,10 +89,8 @@ public class ProblemServiceImpl implements ProblemService {
             problem.getReactions().addLike();
             problem.updateRating();
             problemRepository.save(problem);
-
             profile.addActivity(problemId, activity);
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            editProfile(profile);
             return true;
         }
         return false;
@@ -105,7 +101,7 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        ActivityDto activity = profile.getActivities().computeIfAbsent(problemId, a -> new ActivityDto(false, false));
+        ActivityDto activity = profile.getActivities().computeIfAbsent(problemId, a -> new ActivityDto(Problem.class.getSimpleName().toUpperCase(), false, false));
         if (!activity.getDisliked()) {
             activity.setDisliked(true);
             if (activity.getLiked()) {
@@ -116,8 +112,7 @@ public class ProblemServiceImpl implements ProblemService {
             problem.updateRating();
             problemRepository.save(problem);
             profile.addActivity(problemId, activity);
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            editProfile(profile);
             return true;
         }
         return false;
@@ -130,9 +125,8 @@ public class ProblemServiceImpl implements ProblemService {
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (!profile.getActivities().containsKey(problemId)) {
-            profile.addActivity(problemId, new ActivityDto(false, false));
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            profile.addActivity(problemId, new ActivityDto(Problem.class.getSimpleName().toUpperCase(), false, false));
+            editProfile(profile);
         }
         if (!problem.getSubscribers().contains(profile.getEmail())) {
             problem.addSubscriber(profile.getEmail());
@@ -144,13 +138,12 @@ public class ProblemServiceImpl implements ProblemService {
 
     @Override
     public boolean unsubscribe(String problemId) {
-        //Should be repaired!!! After it had been used, it removes liked problem from activities
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        if (profile.getActivities().containsKey(problemId)) {
+        if (profile.getActivities().containsKey(problemId) &&
+                !profile.getActivities().get(problemId).getLiked() && !profile.getActivities().get(problemId).getDisliked()) {
             profile.removeActivity(problemId);
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            editProfile(profile);
         }
         if (problem.getSubscribers().contains(profile.getEmail())) {
             problem.removeSubscriber(profile.getEmail());
@@ -171,9 +164,8 @@ public class ProblemServiceImpl implements ProblemService {
         problem.checkCurrentAward();
         problemRepository.save(problem);
         if (!profile.getActivities().containsKey(problemId)) {
-            profile.addActivity(problemId, new ActivityDto(false, false));
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            profile.addActivity(problemId, new ActivityDto(Problem.class.getSimpleName().toUpperCase(), false, false));
+            editProfile(profile);
         }
         return true;
     }
@@ -204,13 +196,17 @@ public class ProblemServiceImpl implements ProblemService {
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (problem.getAuthorId().equals(profile.getEmail()) || profile.getRoles().contains("ADMINISTRATOR")) {
-
-            //here should be implemented method to delete THIS problem from every person that exists it.
-            kafkaConsumer.setProfile(profile);
-            kafkaProducer.setProfile(profile);
+            profile.removeFormulatedProblem();
+            kafkaProducer.setProblemIdToDelete(problemId);
+            editProfile(profile);
             problemRepository.delete(problem);
             return modelMapper.map(problem, ProblemDto.class);
         } else
             throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem, or you have no roles to delete it");
+    }
+
+    private void editProfile(ProfileDto profile) {
+        kafkaConsumer.setProfile(profile);
+        kafkaProducer.setProfile(profile);
     }
 }

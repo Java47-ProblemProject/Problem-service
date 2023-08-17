@@ -51,7 +51,7 @@ public class Problem {
         this.solutions = new HashSet<>();
         this.subscribers = new HashSet<>();
         this.dateCreated = LocalDateTime.now();
-        this.type = "problem";
+        this.type = "PROBLEM";
     }
 
     public void addSolution(String solutionId) {

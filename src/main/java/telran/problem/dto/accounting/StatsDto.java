@@ -3,13 +3,15 @@ package telran.problem.dto.accounting;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
-@AllArgsConstructor //must be deleted after test
-
+@AllArgsConstructor
 @Getter
 public class StatsDto {
+    @Setter
     protected Integer solvedProblems;
     protected Integer checkedSolutions;
+    @Setter
     protected Integer formulatedProblems;
     protected Integer rating;
 }

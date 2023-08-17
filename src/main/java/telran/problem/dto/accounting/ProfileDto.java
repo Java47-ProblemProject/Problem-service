@@ -7,12 +7,10 @@ import lombok.ToString;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-@AllArgsConstructor //must be deleted after test
-@NoArgsConstructor //must be deleted after test
+@AllArgsConstructor
+@NoArgsConstructor
 @ToString
-
 @Getter
 public class ProfileDto {
     protected String username;
@@ -33,6 +31,14 @@ public class ProfileDto {
 
     public void removeActivity(String id) {
         this.activities.remove(id);
+    }
+
+    public void addFormulatedProblem(){
+        this.stats.setFormulatedProblems(this.stats.getFormulatedProblems()+1);
+    }
+
+    public void removeFormulatedProblem(){
+        this.stats.setFormulatedProblems(this.stats.getFormulatedProblems()-1);
     }
 
 }

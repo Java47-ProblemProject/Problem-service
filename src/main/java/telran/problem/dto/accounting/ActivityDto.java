@@ -3,10 +3,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-@AllArgsConstructor //must be deleted after test
-
+@AllArgsConstructor
 @Getter
 public class ActivityDto {
+    @Setter
+    protected String type;
     @Setter
     protected Boolean liked;
     @Setter
