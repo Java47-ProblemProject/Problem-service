@@ -10,6 +10,7 @@ import java.util.Set;
 public class ProblemDto {
     protected String id;
     protected String author;
+    protected String authorId;
     protected Integer rating;
     protected String title;
     protected Set<String> communityNames;

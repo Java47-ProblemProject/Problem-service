@@ -34,16 +34,18 @@ public class ProblemServiceImpl implements ProblemService {
 
     @Override
     @Transactional
-    public ProblemDto addProblem(CreateProblemDto problemDto) {
-        Problem problem = modelMapper.map(problemDto, Problem.class);
+    public ProblemDto addProblem(CreateProblemDto newProblem) {
+        Problem problem = modelMapper.map(newProblem, Problem.class);
         ProfileDto profile = kafkaConsumer.getProfile();
         problem.setAuthor(profile.getUsername());
         problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
+        ProblemDto problemDto = modelMapper.map(problem, ProblemDto.class);
         profile.addActivity(problem.getId(), new ActivityDto(problem.getType(), false, false));
         profile.addFormulatedProblem();
         editProfile(profile);
-        return modelMapper.map(problem, ProblemDto.class);
+        kafkaProducer.setProblem(problemDto);
+        return problemDto;
     }
 
     @Override
@@ -69,11 +71,11 @@ public class ProblemServiceImpl implements ProblemService {
                 .orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (problem.getAuthorId().equals(profile.getEmail()) && userId.equals(profile.getEmail())) {
-            problemRepository.delete(problem);
             profile.removeActivity(problemId);
             profile.removeFormulatedProblem();
             kafkaProducer.setProblemIdToDelete(problemId);
             editProfile(profile);
+            problemRepository.delete(problem);
             return modelMapper.map(problem, ProblemDto.class);
         } else throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem");
     }

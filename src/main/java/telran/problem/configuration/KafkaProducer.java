@@ -6,6 +6,7 @@ import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import telran.problem.dto.accounting.ProfileDto;
+import telran.problem.dto.problems.ProblemDto;
 
 import java.util.function.Supplier;
 
@@ -17,6 +18,8 @@ public class KafkaProducer {
     private ProfileDto profile;
     @Setter
     private String problemIdToDelete;
+    @Setter
+    private ProblemDto problem;
 
     @Bean
     public Supplier<ProfileDto> sendUpdatedProfile() {
@@ -25,6 +28,20 @@ public class KafkaProducer {
                 streamBridge.send("sendUpdatedProfile-out-0", profile);
                 ProfileDto sentMessage = profile;
                 profile = null;
+                return sentMessage;
+            }
+            return null;
+        };
+    }
+
+    @Bean
+    public Supplier<ProblemDto> sendProblemToComment() {
+        return () -> {
+            if (problem != null) {
+                System.out.println("Problem : " + problem);
+                streamBridge.send("sendProblemToComment-out-0", problem);
+                ProblemDto sentMessage = problem;
+                problem = null;
                 return sentMessage;
             }
             return null;

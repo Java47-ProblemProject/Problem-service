@@ -26,7 +26,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         //FOR TEST ONLY --->
         //kafkaConsumer.addUser1(null);
         ProfileDto profile = kafkaConsumer.getProfile();
-        System.out.println(profile);
         if (profile != null && encryptedEmail.equals(profile.getEmail())) {
             return new User(profile.getEmail(), profile.getPassword(), AuthorityUtils.createAuthorityList(profile.getRoles()));
         } else throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Wrong email");
