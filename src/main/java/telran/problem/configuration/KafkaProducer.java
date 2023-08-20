@@ -17,6 +17,8 @@ public class KafkaProducer {
     @Setter
     private ProfileDto profile;
     @Setter
+    private ProfileDto profileToComment;
+    @Setter
     private String problemIdToDelete;
     @Setter
     private ProblemDto problem;
@@ -28,6 +30,19 @@ public class KafkaProducer {
                 streamBridge.send("sendUpdatedProfile-out-0", profile);
                 ProfileDto sentMessage = profile;
                 profile = null;
+                return sentMessage;
+            }
+            return null;
+        };
+    }
+
+    @Bean
+    public Supplier<ProfileDto> sendProfileToComment() {
+        return () -> {
+            if (profileToComment != null) {
+                streamBridge.send("sendAuthenticatedProfileToComment-out-0",profileToComment);
+                ProfileDto sentMessage = profileToComment;
+                profileToComment = null;
                 return sentMessage;
             }
             return null;

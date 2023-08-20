@@ -186,7 +186,9 @@ public class ProblemServiceImpl implements ProblemService {
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(ProblemNotFoundException::new);
-        return modelMapper.map(problem, ProblemDto.class);
+        ProblemDto problemDto = modelMapper.map(problem, ProblemDto.class);
+        kafkaProducer.setProblem(problemDto);
+        return problemDto;
     }
 
     @Override
@@ -223,5 +225,6 @@ public class ProblemServiceImpl implements ProblemService {
     private void editProfile(ProfileDto profile) {
         kafkaConsumer.setProfile(profile);
         kafkaProducer.setProfile(profile);
+        kafkaProducer.setProfileToComment(profile);
     }
 }
