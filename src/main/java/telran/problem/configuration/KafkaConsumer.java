@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.Transactional;
+import telran.problem.dao.ProblemCustomRepository;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.dto.accounting.ProfileDto;
 import telran.problem.dto.exceptions.ProblemNotFoundException;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
 @Configuration
 public class KafkaConsumer {
     final ProblemRepository problemRepository;
-    final KafkaProducer kafkaProducer;
+    final ProblemCustomRepository problemCustomRepository;
     @Setter
     ProfileDto profile;
 
@@ -27,7 +28,6 @@ public class KafkaConsumer {
     protected Consumer<ProfileDto> receiveProfile() {
         return data -> {
             this.profile = data;
-            kafkaProducer.setProfileToComment(data);
         };
     }
 
@@ -36,7 +36,6 @@ public class KafkaConsumer {
     protected Consumer<ProfileDto> receiveUpdatedProfile() {
         return data -> {
             this.profile = data;
-            kafkaProducer.setProfile(data);
         };
     }
 
@@ -50,6 +49,24 @@ public class KafkaConsumer {
             Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
             problem.addComment(typeId);
             problemRepository.save(problem);
+        };
+    }
+
+    @Bean
+    @Transactional
+    protected Consumer<String> receiveNewName() {
+        return data ->{
+            String authorId = data.split(",")[0];
+            String newName = data.split(",")[1];
+            problemCustomRepository.changeAuthorName(authorId, newName);
+        };
+    }
+
+    @Bean
+    @Transactional
+    protected Consumer<String> receiveAuthorToRemove() {
+        return data -> {
+            problemCustomRepository.deleteProblemsByAuthorId(data);
         };
     }
 }

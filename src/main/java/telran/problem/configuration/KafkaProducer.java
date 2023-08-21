@@ -17,9 +17,7 @@ public class KafkaProducer {
     @Setter
     private ProfileDto profile;
     @Setter
-    private ProfileDto profileToComment;
-    @Setter
-    private String problemIdToDelete;
+    private ProblemDto problemToDelete;
     @Setter
     private ProblemDto problem;
 
@@ -27,22 +25,9 @@ public class KafkaProducer {
     public Supplier<ProfileDto> sendUpdatedProfile() {
         return () -> {
             if (profile != null) {
-                streamBridge.send("sendUpdatedProfile-out-0", profile);
+                //streamBridge.send("sendUpdatedProfile-out-0", profile);
                 ProfileDto sentMessage = profile;
                 profile = null;
-                return sentMessage;
-            }
-            return null;
-        };
-    }
-
-    @Bean
-    public Supplier<ProfileDto> sendProfileToComment() {
-        return () -> {
-            if (profileToComment != null) {
-                streamBridge.send("sendAuthenticatedProfileToComment-out-0",profileToComment);
-                ProfileDto sentMessage = profileToComment;
-                profileToComment = null;
                 return sentMessage;
             }
             return null;
@@ -53,8 +38,7 @@ public class KafkaProducer {
     public Supplier<ProblemDto> sendProblemToComment() {
         return () -> {
             if (problem != null) {
-                System.out.println("Problem : " + problem);
-                streamBridge.send("sendProblemToComment-out-0", problem);
+                //streamBridge.send("sendProblemToComment-out-0", problem);
                 ProblemDto sentMessage = problem;
                 problem = null;
                 return sentMessage;
@@ -64,12 +48,12 @@ public class KafkaProducer {
     }
 
     @Bean
-    public Supplier<String> sendProblemIdToDelete() {
+    public Supplier<ProblemDto> sendProblemIdToDelete() {
         return () -> {
-            if (problemIdToDelete != null) {
-                streamBridge.send("sendProblemIdToDelete-out-0", problemIdToDelete);
-                String sentMessage = problemIdToDelete;
-                problemIdToDelete = null;
+            if (problemToDelete != null) {
+                //streamBridge.send("sendProblemIdToDelete-out-0", problemToDelete);
+                ProblemDto sentMessage = problemToDelete;
+                problemToDelete = null;
                 return sentMessage;
             }
             return null;
