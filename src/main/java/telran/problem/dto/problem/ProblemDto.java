@@ -1,6 +1,6 @@
 package telran.problem.dto.problem;
 
-import lombok.*;
+import lombok.Getter;
 import telran.problem.model.Reactions;
 
 import java.time.LocalDateTime;
