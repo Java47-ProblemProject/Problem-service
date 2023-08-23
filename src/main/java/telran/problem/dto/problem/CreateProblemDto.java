@@ -1,4 +1,4 @@
-package telran.problem.dto.problems;
+package telran.problem.dto.problem;
 
 import lombok.*;
 

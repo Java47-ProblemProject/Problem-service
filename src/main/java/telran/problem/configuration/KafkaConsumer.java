@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import telran.problem.dao.ProblemCustomRepository;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.dto.accounting.ProfileDto;
+import telran.problem.dto.kafkaData.CommentServiceDataDto;
+import telran.problem.model.Problem;
 
 import java.util.function.Consumer;
 
@@ -25,7 +27,36 @@ public class KafkaConsumer {
     @Transactional
     protected Consumer<ProfileDto> receiveProfile() {
         return data -> {
-            this.profile = data;
+            if (data.getUsername().equals("DELETED_PROFILE")) {
+                //profile was deleted ->
+                problemCustomRepository.deleteProblemsByAuthorId(data.getEmail());
+                this.profile = new ProfileDto();
+            } else if (this.profile != null && data.getEmail().equals(profile.getEmail()) && !data.getUsername().equals(profile.getUsername())) {
+                problemCustomRepository.changeAuthorName(data.getEmail(), data.getUsername());
+                this.profile = data;
+            } else this.profile = data;
+        };
+    }
+
+    @Bean
+    @Transactional
+    protected Consumer<CommentServiceDataDto> receiveDataFromComment() {
+        return data -> {
+            String profileId = data.getProfileId();
+            String problemId = data.getProblemId();
+            String methodName = data.getMethodName();
+            String commentId = data.getCommentsId();
+            if (methodName.equals("addComment")) {
+                Problem problem = problemRepository.findById(problemId).get();
+                problem.addComment(commentId);
+                problemRepository.save(problem);
+            }
+            if (methodName.equals("deleteComment")) {
+                Problem problem = problemRepository.findById(problemId).get();
+                problem.removeComment(commentId);
+                problemRepository.save(problem);
+            }
+
         };
     }
 }

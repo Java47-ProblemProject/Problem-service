@@ -62,6 +62,10 @@ public class Problem {
         this.comments.add(commentId);
     }
 
+    public void removeComment(String commentId) {
+        this.comments.remove(commentId);
+    }
+
     public void addSubscriber(String profileId) {
         this.subscribers.add(profileId);
     }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import telran.problem.dto.kafkaData.ProblemServiceDataDto;
 
 import java.util.function.Supplier;
 
@@ -11,14 +12,14 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class KafkaProducer {
     @Setter
-    private String dataForAccounting;
+    private ProblemServiceDataDto problemData;
 
     @Bean
-    public Supplier<String> sendDataToAccounting() {
+    public Supplier<ProblemServiceDataDto> sendData() {
         return () -> {
-            if (dataForAccounting != null) {
-                String sentMessage = dataForAccounting;
-                dataForAccounting = null;
+            if (problemData != null) {
+                ProblemServiceDataDto sentMessage = problemData;
+                problemData = null;
                 return sentMessage;
             }
             return null;

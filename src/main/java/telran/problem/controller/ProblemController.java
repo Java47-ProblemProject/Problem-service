@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
-import telran.problem.dto.problems.CreateProblemDto;
-import telran.problem.dto.problems.DonationDto;
-import telran.problem.dto.problems.EditProblemDto;
-import telran.problem.dto.problems.ProblemDto;
+import telran.problem.dto.problem.CreateProblemDto;
+import telran.problem.dto.problem.DonationDto;
+import telran.problem.dto.problem.EditProblemDto;
+import telran.problem.dto.problem.ProblemDto;
 import telran.problem.service.ProblemService;
 
 
