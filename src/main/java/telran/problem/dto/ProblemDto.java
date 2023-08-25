@@ -1,4 +1,4 @@
-package telran.problem.dto.problem;
+package telran.problem.dto;
 
 import lombok.Getter;
 import telran.problem.model.Reactions;

@@ -65,6 +65,9 @@ public class Problem {
     public void removeComment(String commentId) {
         this.comments.remove(commentId);
     }
+    public void removeSolution(String solutionId) {
+        this.solutions.remove(solutionId);
+    }
 
     public void addSubscriber(String profileId) {
         this.subscribers.add(profileId);

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import telran.problem.dto.kafkaData.ProblemServiceDataDto;
+import telran.problem.dto.kafkaData.problemDataDto.ProblemServiceDataDto;
 
 import java.util.function.Supplier;
 
@@ -25,5 +25,4 @@ public class KafkaProducer {
             return null;
         };
     }
-
 }

@@ -1,12 +1,13 @@
 package telran.problem.service;
 
-import telran.problem.dto.problem.CreateProblemDto;
-import telran.problem.dto.problem.DonationDto;
-import telran.problem.dto.problem.EditProblemDto;
-import telran.problem.dto.problem.ProblemDto;
+import telran.problem.dto.CreateProblemDto;
+import telran.problem.dto.DonationDto;
+import telran.problem.dto.EditProblemDto;
+import telran.problem.dto.ProblemDto;
 
 
 import java.util.List;
+import java.util.Set;
 
 
 public interface ProblemService {
@@ -19,6 +20,8 @@ public interface ProblemService {
     boolean donate(String problemId, DonationDto donation);
     boolean unsubscribe(String problemId);
     ProblemDto findProblemById(String problemId);
+    public Set<ProblemDto> findProblemsByCommunities(Set<String> communities);
+    public Set<ProblemDto> findProblemsByProfileId(String profileId);
     List<ProblemDto> getProblems();
     Double getCurrentAwardByProblemId(String problemId);
     ProblemDto deleteProblem(String problemId);

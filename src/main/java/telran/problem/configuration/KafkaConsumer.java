@@ -9,7 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import telran.problem.dao.ProblemCustomRepository;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.dto.accounting.ProfileDto;
-import telran.problem.dto.kafkaData.CommentServiceDataDto;
+import telran.problem.dto.kafkaData.commentDataDto.CommentMethodName;
+import telran.problem.dto.kafkaData.commentDataDto.CommentServiceDataDto;
+import telran.problem.dto.kafkaData.SolutionDataDto.SolutionMethodName;
+import telran.problem.dto.kafkaData.SolutionDataDto.SolutionServiceDataDto;
 import telran.problem.model.Problem;
 
 import java.util.function.Consumer;
@@ -44,19 +47,41 @@ public class KafkaConsumer {
         return data -> {
             String profileId = data.getProfileId();
             String problemId = data.getProblemId();
-            String methodName = data.getMethodName();
+            CommentMethodName methodName = data.getMethodName();
             String commentId = data.getCommentsId();
-            if (methodName.equals("addComment")) {
+            System.out.println("COMMENT DATA RECEIVED" + profileId + problemId + methodName + commentId);
+            if (methodName.equals(CommentMethodName.ADD_COMMENT)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.addComment(commentId);
                 problemRepository.save(problem);
             }
-            if (methodName.equals("deleteComment")) {
+            if (methodName.equals(CommentMethodName.DELETE_COMMENT) || methodName.equals(CommentMethodName.DELETE_COMMENT_AND_PROBLEM)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeComment(commentId);
                 problemRepository.save(problem);
             }
+        };
+    }
 
+    @Bean
+    @Transactional
+    protected Consumer<SolutionServiceDataDto> receiveDataFromSolution() {
+        return data -> {
+            String profileId = data.getProfileId();
+            String problemId = data.getProblemId();
+            SolutionMethodName methodName = data.getMethodName();
+            String commentId = data.getSolutionId();
+            System.out.println("SOLUTION DATA RECEIVED" + profileId + problemId + methodName + commentId);
+            if (methodName.equals(SolutionMethodName.ADD_SOLUTION)) {
+                Problem problem = problemRepository.findById(problemId).get();
+                problem.addSolution(commentId);
+                problemRepository.save(problem);
+            }
+            if (methodName.equals(SolutionMethodName.DELETE_SOLUTION) || methodName.equals(SolutionMethodName.DELETE_SOLUTION_AND_PROBLEM)) {
+                Problem problem = problemRepository.findById(problemId).get();
+                problem.removeSolution(commentId);
+                problemRepository.save(problem);
+            }
         };
     }
 }

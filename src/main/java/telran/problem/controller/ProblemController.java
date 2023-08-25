@@ -5,14 +5,15 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
-import telran.problem.dto.problem.CreateProblemDto;
-import telran.problem.dto.problem.DonationDto;
-import telran.problem.dto.problem.EditProblemDto;
-import telran.problem.dto.problem.ProblemDto;
+import telran.problem.dto.CreateProblemDto;
+import telran.problem.dto.DonationDto;
+import telran.problem.dto.EditProblemDto;
+import telran.problem.dto.ProblemDto;
 import telran.problem.service.ProblemService;
 
 
 import java.util.List;
+import java.util.Set;
 
 
 @RequiredArgsConstructor
@@ -49,6 +50,16 @@ public class ProblemController {
     @GetMapping("/getproblem/{problemId}")
     public ProblemDto getProblem(@PathVariable String problemId) {
         return problemService.findProblemById(problemId);
+    }
+
+    @GetMapping("/getcomunityproblems")
+    public Set<ProblemDto> findProblemsByCommunities(@RequestBody Set<String> problemIds){
+        return problemService.findProblemsByCommunities(problemIds);
+    }
+
+    @GetMapping("/getproblems/{profileId}")
+    public Set<ProblemDto> findProblemsByProfileId(@PathVariable String profileId){
+        return problemService.findProblemsByProfileId(profileId);
     }
 
     @GetMapping("/getproblems")

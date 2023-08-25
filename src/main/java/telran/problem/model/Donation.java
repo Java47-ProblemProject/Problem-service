@@ -9,6 +9,8 @@ public class Donation {
     @Setter
     protected String userId;
     @Setter
+    protected String userName;
+    @Setter
     protected Double amount;
     @Setter
     protected LocalDateTime dateDonated;
