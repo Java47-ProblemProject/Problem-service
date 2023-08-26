@@ -38,6 +38,7 @@ public class KafkaConsumer {
                 problemCustomRepository.changeAuthorName(data.getEmail(), data.getUsername());
                 this.profile = data;
             } else this.profile = data;
+
         };
     }
 
