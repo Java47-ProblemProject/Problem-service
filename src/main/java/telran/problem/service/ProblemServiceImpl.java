@@ -41,7 +41,7 @@ public class ProblemServiceImpl implements ProblemService {
         problem.setAuthorId(profile.getEmail());
         problem = problemRepository.save(problem);
         ProblemDto problemDto = modelMapper.map(problem, ProblemDto.class);
-        ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_PROBLEM, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_PROBLEM);
         kafkaProducer.setProblemData(data);
         return problemDto;
     }
@@ -56,7 +56,7 @@ public class ProblemServiceImpl implements ProblemService {
             problem.setDetails(editProblemDto.getDetails());
             problem.setCommunityNames(editProblemDto.getCommunityNames());
             Problem updatedProblem = problemRepository.save(problem);
-            ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), updatedProblem.getId(), updatedProblem.getAuthorId(), ProblemMethodName.EDIT_PROBLEM, updatedProblem.getComments(), updatedProblem.getSolutions(), updatedProblem.getSubscribers(), updatedProblem.getCommunityNames());
+            ProblemServiceDataDto data = addDataToTransfer(profile, updatedProblem, ProblemMethodName.EDIT_PROBLEM);
             kafkaProducer.setProblemData(data);
             return modelMapper.map(updatedProblem, ProblemDto.class);
         } else throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem");
@@ -68,7 +68,7 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (problem.getAuthorId().equals(profile.getEmail()) && userId.equals(profile.getEmail())) {
-            ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.DELETE_PROBLEM, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.DELETE_PROBLEM);
             kafkaProducer.setProblemData(data);
             problemRepository.delete(problem);
             return modelMapper.map(problem, ProblemDto.class);
@@ -80,13 +80,15 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean addLike(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
+        Double profileRating = profile.getStats().getRating();
         ProblemServiceDataDto data;
         boolean hasActivity = profile.getActivities().containsKey(problemId);
         if (!hasActivity) {
             problem.getReactions().addLike();
-            problem.updateRating();
+            problem.getReactions().setLikesWeight(profileRating);
+            problem.calculateRating();
             problemRepository.save(problem);
-            data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_LIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_LIKE);
             kafkaProducer.setProblemData(data);
             return true;
         }
@@ -94,21 +96,23 @@ public class ProblemServiceImpl implements ProblemService {
         boolean disliked = profile.getActivities().get(problemId).getDisliked();
         if (!liked) {
             problem.getReactions().addLike();
-            problem.updateRating();
+            problem.getReactions().setLikesWeight(profileRating);
+            problem.calculateRating();
             if (disliked) {
                 problem.getReactions().removeDislike();
-                problem.updateRating();
+                problem.calculateRating();
             }
-            data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_LIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_LIKE);
             kafkaProducer.setProblemData(data);
             problemRepository.save(problem);
             return true;
         } else {
             problem.getReactions().removeLike();
-            problem.updateRating();
+            problem.getReactions().setLikesWeight(problem.getReactions().getLikesWeight() - profileRating);
+            problem.calculateRating();
             data = problem.getSubscribers().contains(profile.getEmail()) || problem.getAuthorId().equals(profile.getEmail())
-                    ? addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.REMOVE_LIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames())
-                    : addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.REMOVE_LIKE_REMOVE_ACTIVITY, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+                    ? addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_LIKE)
+                    : addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_LIKE_REMOVE_ACTIVITY);
             kafkaProducer.setProblemData(data);
             problemRepository.save(problem);
             return false;
@@ -120,36 +124,39 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean addDisLike(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
+        Double profileRating = profile.getStats().getRating();
         ProblemServiceDataDto data;
         boolean hasActivity = profile.getActivities().containsKey(problemId);
         if (!hasActivity) {
             problem.getReactions().addDislike();
-            problem.updateRating();
+            problem.getReactions().setDislikesWeight(profileRating);
+            problem.calculateRating();
             problemRepository.save(problem);
-            data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_DISLIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_DISLIKE);
             kafkaProducer.setProblemData(data);
             return true;
         }
         boolean liked = profile.getActivities().get(problemId).getLiked();
         boolean disliked = profile.getActivities().get(problemId).getDisliked();
-
         if (!disliked) {
             problem.getReactions().addDislike();
-            problem.updateRating();
+            problem.getReactions().setDislikesWeight(profileRating);
+            problem.calculateRating();
             if (liked) {
                 problem.getReactions().removeLike();
-                problem.updateRating();
+                problem.calculateRating();
             }
             problemRepository.save(problem);
-            data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_DISLIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            data = addDataToTransfer(profile,problem, ProblemMethodName.ADD_DISLIKE);
             kafkaProducer.setProblemData(data);
             return true;
         } else {
             problem.getReactions().removeDislike();
-            problem.updateRating();
+            problem.getReactions().setDislikesWeight(problem.getReactions().getDislikesWeight() - profileRating);
+            problem.calculateRating();
             data = problem.getSubscribers().contains(profile.getEmail()) || problem.getAuthorId().equals(profile.getEmail())
-                    ? addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.REMOVE_DISLIKE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames())
-                    : addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.REMOVE_DISLIKE_REMOVE_ACTIVITY, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+                    ? addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_DISLIKE)
+                    : addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_DISLIKE_REMOVE_ACTIVITY);
             kafkaProducer.setProblemData(data);
             problemRepository.save(problem);
             return false;
@@ -163,10 +170,11 @@ public class ProblemServiceImpl implements ProblemService {
         ProfileDto profile = kafkaConsumer.getProfile();
         if (!problem.getSubscribers().contains(profile.getEmail())) {
             if (!profile.getActivities().containsKey(problemId)) {
-                ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.SUBSCRIBE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+                ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.SUBSCRIBE);
                 kafkaProducer.setProblemData(data);
             }
             problem.addSubscriber(profile.getEmail());
+            problem.calculateRating();
             problemRepository.save(problem);
             return true;
         }
@@ -181,10 +189,11 @@ public class ProblemServiceImpl implements ProblemService {
         if (problem.getSubscribers().contains(profile.getEmail())) {
             if (profile.getActivities().containsKey(problemId) &&
                     !profile.getActivities().get(problemId).getLiked() && !profile.getActivities().get(problemId).getDisliked()) {
-                ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.UNSUBSCRIBE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+                ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.UNSUBSCRIBE);
                 kafkaProducer.setProblemData(data);
             }
             problem.removeSubscriber(profile.getEmail());
+            problem.calculateRating();
             problemRepository.save(problem);
             return true;
         }
@@ -202,9 +211,10 @@ public class ProblemServiceImpl implements ProblemService {
         donation.setUserName(profile.getUsername());
         problem.addDonation(donation);
         problem.checkCurrentAward();
+        problem.calculateRating();
         problemRepository.save(problem);
         if (!profile.getActivities().containsKey(problemId)) {
-            ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.DONATE, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.DONATE);
             kafkaProducer.setProblemData(data);
         }
         return true;
@@ -215,7 +225,7 @@ public class ProblemServiceImpl implements ProblemService {
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.ADD_PROBLEM, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+        ProblemServiceDataDto data =addDataToTransfer(profile, problem, ProblemMethodName.ADD_PROBLEM);
         kafkaProducer.setProblemData(data);
         return modelMapper.map(problem, ProblemDto.class);
     }
@@ -255,15 +265,14 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         if (problem.getAuthorId().equals(profile.getEmail()) || profile.getRoles().contains("ADMINISTRATOR")) {
-            ProblemServiceDataDto data = addDataToTransfer(profile.getEmail(), problem.getId(), problem.getAuthorId(), ProblemMethodName.DELETE_PROBLEM, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+            ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.DELETE_PROBLEM);
             kafkaProducer.setProblemData(data);
             problemRepository.delete(problem);
             return modelMapper.map(problem, ProblemDto.class);
         } else
             throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem, or you have no roles to delete it");
     }
-
-    private ProblemServiceDataDto addDataToTransfer(String profileId, String problemId, String problemAuthorId, ProblemMethodName methodName, Set<String> comments, Set<String> solutions, Set<String> subscribers, Set<String> communities) {
-        return new ProblemServiceDataDto(profileId, problemId, problemAuthorId, methodName, comments, solutions, subscribers, communities);
+    private ProblemServiceDataDto addDataToTransfer(ProfileDto profile, Problem problem, ProblemMethodName methodName) {
+        return new ProblemServiceDataDto(profile.getEmail(), problem.getId(), problem.getAuthorId(),problem.getRating(), methodName, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
     }
 }

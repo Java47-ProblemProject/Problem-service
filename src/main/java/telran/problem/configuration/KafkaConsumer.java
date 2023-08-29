@@ -14,6 +14,7 @@ import telran.problem.dto.kafkaData.commentDataDto.CommentServiceDataDto;
 import telran.problem.dto.kafkaData.SolutionDataDto.SolutionMethodName;
 import telran.problem.dto.kafkaData.SolutionDataDto.SolutionServiceDataDto;
 import telran.problem.model.Problem;
+import telran.problem.model.Status;
 
 import java.util.function.Consumer;
 
@@ -46,19 +47,19 @@ public class KafkaConsumer {
     @Transactional
     protected Consumer<CommentServiceDataDto> receiveDataFromComment() {
         return data -> {
-            String profileId = data.getProfileId();
             String problemId = data.getProblemId();
             CommentMethodName methodName = data.getMethodName();
             String commentId = data.getCommentsId();
-            System.out.println("COMMENT DATA RECEIVED" + profileId + problemId + methodName + commentId);
             if (methodName.equals(CommentMethodName.ADD_COMMENT)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.addComment(commentId);
+                problem.calculateRating();
                 problemRepository.save(problem);
             }
             if (methodName.equals(CommentMethodName.DELETE_COMMENT) || methodName.equals(CommentMethodName.DELETE_COMMENT_AND_PROBLEM)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeComment(commentId);
+                problem.calculateRating();
                 problemRepository.save(problem);
             }
         };
@@ -72,15 +73,18 @@ public class KafkaConsumer {
             String problemId = data.getProblemId();
             SolutionMethodName methodName = data.getMethodName();
             String commentId = data.getSolutionId();
-            System.out.println("SOLUTION DATA RECEIVED" + profileId + problemId + methodName + commentId);
             if (methodName.equals(SolutionMethodName.ADD_SOLUTION)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.addSolution(commentId);
+                problem.calculateRating();
+                problem.setStatus(Status.PENDING);
                 problemRepository.save(problem);
             }
             if (methodName.equals(SolutionMethodName.DELETE_SOLUTION) || methodName.equals(SolutionMethodName.DELETE_SOLUTION_AND_PROBLEM)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeSolution(commentId);
+                problem.calculateRating();
+                problem.setStatus(problem.getSolutions().isEmpty() ? Status.OPENED : Status.PENDING);
                 problemRepository.save(problem);
             }
         };

@@ -6,10 +6,13 @@ import lombok.Setter;
 
 @AllArgsConstructor
 @Getter
-@Setter
 public class Reactions {
     protected Integer likes = 0;
+    @Setter
+    protected Double likesWeight = 0.;
     protected Integer dislikes = 0;
+    @Setter
+    protected Double dislikesWeight = 0.;
 
     public void addLike() {
         this.likes++;

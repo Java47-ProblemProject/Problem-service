@@ -24,7 +24,6 @@ public class Problem {
     protected String author;
     @Setter
     protected String authorId;
-    protected Integer rating;
     @Setter
     protected String title;
     @Setter
@@ -35,6 +34,9 @@ public class Problem {
     @Setter
     protected Double currentAward;
     protected Reactions reactions;
+    protected Double rating;
+    @Setter
+    protected Status status;
     protected List<Donation> donationHistory;
     protected Set<String> comments;
     protected Set<String> solutions;
@@ -42,9 +44,10 @@ public class Problem {
     protected String type;
 
     public Problem() {
-        this.rating = 0;
-        this.currentAward = 0.0;
-        this.reactions = new Reactions(0, 0);
+        this.rating = 0.;
+        this.status = Status.OPENED;
+        this.currentAward = 0.;
+        this.reactions = new Reactions(0, 0., 0, 0.);
         this.communityNames = new HashSet<>();
         this.donationHistory = new ArrayList<>();
         this.comments = new HashSet<>();
@@ -65,6 +68,7 @@ public class Problem {
     public void removeComment(String commentId) {
         this.comments.remove(commentId);
     }
+
     public void removeSolution(String solutionId) {
         this.solutions.remove(solutionId);
     }
@@ -77,20 +81,18 @@ public class Problem {
         this.subscribers.remove(profileId);
     }
 
-    public void updateRating() {
-        double w1 = 1.0;
-        double w2 = 1.0;
-        int likes = this.reactions.getLikes();
-        int disLikes = this.reactions.getDislikes();
-        double totalDonations = donationHistory.stream().mapToDouble(Donation::getAmount).sum();
-        int total = likes - disLikes;
-        double newRating = (total > 0) ? w1 * total + w2 * totalDonations : w1 * 0 + w2 * totalDonations;
-        this.rating = (int) Math.round(newRating);
+    public void calculateRating() {
+        double reactionsWeight = this.reactions.getLikesWeight() - this.reactions.getDislikesWeight();
+        double commentsWeight = 0.1 * this.comments.size();
+        double subscribersWeight = 0.2 * this.subscribers.size();
+        double solutionsWeight = 0.3 * this.solutions.size();
+        double donationsWeight = 0.5 * (this.donationHistory.size() + this.donationHistory.stream().mapToDouble(Donation::getAmount).sum());
+        double newRating = reactionsWeight + subscribersWeight + donationsWeight + commentsWeight + solutionsWeight;
+        this.rating = Double.parseDouble(String.format("%.2f", newRating));
     }
 
     public void checkCurrentAward() {
-        double totalDonations = !this.donationHistory.isEmpty() ?
-                donationHistory.stream().mapToDouble(Donation::getAmount).sum() : 0.0;
+        double totalDonations = !this.donationHistory.isEmpty() ? donationHistory.stream().mapToDouble(Donation::getAmount).sum() : 0.0;
         if (totalDonations != currentAward) {
             setCurrentAward(totalDonations);
         }
