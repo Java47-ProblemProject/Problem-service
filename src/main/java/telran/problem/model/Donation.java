@@ -5,17 +5,21 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
+@NoArgsConstructor
 public class Donation {
     @Setter
-    protected String userId;
+    protected String profileId;
     @Setter
-    protected String userName;
+    protected String profileName;
     @Setter
     protected Double amount;
     @Setter
     protected LocalDateTime dateDonated;
 
-    public Donation() {
+    public Donation(String profileId, String profileName, Double amount) {
+        this.profileId = profileId;
+        this.profileName = profileName;
+        this.amount = amount;
         this.dateDonated = LocalDateTime.now();
     }
 }

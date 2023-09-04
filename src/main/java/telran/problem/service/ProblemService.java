@@ -18,7 +18,6 @@ public interface ProblemService {
     boolean addDisLike(String problemId);
     boolean subscribe(String problemId);
     boolean donate(String problemId, DonationDto donation);
-    boolean unsubscribe(String problemId);
     ProblemDto findProblemById(String problemId);
     public Set<ProblemDto> findProblemsByCommunities(Set<String> communities);
     public Set<ProblemDto> findProblemsByProfileId(String profileId);

@@ -14,9 +14,12 @@ import telran.problem.dto.kafkaData.commentDataDto.CommentServiceDataDto;
 import telran.problem.dto.kafkaData.SolutionDataDto.SolutionMethodName;
 import telran.problem.dto.kafkaData.SolutionDataDto.SolutionServiceDataDto;
 import telran.problem.model.Problem;
+import telran.problem.model.ProfileDetails;
 import telran.problem.model.Status;
 
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Getter
 @RequiredArgsConstructor
@@ -39,7 +42,6 @@ public class KafkaConsumer {
                 problemCustomRepository.changeAuthorName(data.getEmail(), data.getUsername());
                 this.profile = data;
             } else this.profile = data;
-
         };
     }
 
@@ -53,10 +55,14 @@ public class KafkaConsumer {
             if (methodName.equals(CommentMethodName.ADD_COMMENT)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.addComment(commentId);
+                Set<String> problemSubscribers = problem.getInteractions().getSubscriptions().stream().map(ProfileDetails::getProfileId).collect(Collectors.toSet());
+                if (!problemSubscribers.contains(profile.getEmail())) {
+                    problem.getInteractions().setSubscription(profile.getEmail(), profile.getStats().getRating());
+                }
                 problem.calculateRating();
                 problemRepository.save(problem);
             }
-            if (methodName.equals(CommentMethodName.DELETE_COMMENT) || methodName.equals(CommentMethodName.DELETE_COMMENT_AND_PROBLEM)) {
+            if (methodName.equals(CommentMethodName.DELETE_COMMENT)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeComment(commentId);
                 problem.calculateRating();

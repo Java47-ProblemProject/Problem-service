@@ -18,8 +18,8 @@ import telran.problem.dto.CreateProblemDto;
 import telran.problem.dto.DonationDto;
 import telran.problem.dto.EditProblemDto;
 import telran.problem.dto.ProblemDto;
-import telran.problem.model.Donation;
 import telran.problem.model.Problem;
+import telran.problem.model.ProfileDetails;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,6 +39,8 @@ public class ProblemServiceImpl implements ProblemService {
         ProfileDto profile = kafkaConsumer.getProfile();
         problem.setAuthor(profile.getUsername());
         problem.setAuthorId(profile.getEmail());
+        problem.calculateRating();
+        checkAndSubscribe(problem, profile);
         problem = problemRepository.save(problem);
         ProblemDto problemDto = modelMapper.map(problem, ProblemDto.class);
         ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_PROBLEM);
@@ -81,42 +83,13 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         Double profileRating = profile.getStats().getRating();
-        ProblemServiceDataDto data;
-        boolean hasActivity = profile.getActivities().containsKey(problemId);
-        if (!hasActivity) {
-            problem.getReactions().addLike();
-            problem.getReactions().setLikesWeight(profileRating);
-            problem.calculateRating();
-            problemRepository.save(problem);
-            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_LIKE);
-            kafkaProducer.setProblemData(data);
-            return true;
-        }
-        boolean liked = profile.getActivities().get(problemId).getLiked();
-        boolean disliked = profile.getActivities().get(problemId).getDisliked();
-        if (!liked) {
-            problem.getReactions().addLike();
-            problem.getReactions().setLikesWeight(profileRating);
-            problem.calculateRating();
-            if (disliked) {
-                problem.getReactions().removeDislike();
-                problem.calculateRating();
-            }
-            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_LIKE);
-            kafkaProducer.setProblemData(data);
-            problemRepository.save(problem);
-            return true;
-        } else {
-            problem.getReactions().removeLike();
-            problem.getReactions().setLikesWeight(problem.getReactions().getLikesWeight() - profileRating);
-            problem.calculateRating();
-            data = problem.getSubscribers().contains(profile.getEmail()) || problem.getAuthorId().equals(profile.getEmail())
-                    ? addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_LIKE)
-                    : addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_LIKE_REMOVE_ACTIVITY);
-            kafkaProducer.setProblemData(data);
-            problemRepository.save(problem);
-            return false;
-        }
+        boolean result = problem.getInteractions().setLike(profile.getEmail(), profileRating);
+        checkAndSubscribe(problem, profile);
+        problem.calculateRating();
+        problemRepository.save(problem);
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_LIKE);
+        kafkaProducer.setProblemData(data);
+        return result;
     }
 
     @Override
@@ -125,42 +98,13 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
         Double profileRating = profile.getStats().getRating();
-        ProblemServiceDataDto data;
-        boolean hasActivity = profile.getActivities().containsKey(problemId);
-        if (!hasActivity) {
-            problem.getReactions().addDislike();
-            problem.getReactions().setDislikesWeight(profileRating);
-            problem.calculateRating();
-            problemRepository.save(problem);
-            data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_DISLIKE);
-            kafkaProducer.setProblemData(data);
-            return true;
-        }
-        boolean liked = profile.getActivities().get(problemId).getLiked();
-        boolean disliked = profile.getActivities().get(problemId).getDisliked();
-        if (!disliked) {
-            problem.getReactions().addDislike();
-            problem.getReactions().setDislikesWeight(profileRating);
-            problem.calculateRating();
-            if (liked) {
-                problem.getReactions().removeLike();
-                problem.calculateRating();
-            }
-            problemRepository.save(problem);
-            data = addDataToTransfer(profile,problem, ProblemMethodName.ADD_DISLIKE);
-            kafkaProducer.setProblemData(data);
-            return true;
-        } else {
-            problem.getReactions().removeDislike();
-            problem.getReactions().setDislikesWeight(problem.getReactions().getDislikesWeight() - profileRating);
-            problem.calculateRating();
-            data = problem.getSubscribers().contains(profile.getEmail()) || problem.getAuthorId().equals(profile.getEmail())
-                    ? addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_DISLIKE)
-                    : addDataToTransfer(profile, problem, ProblemMethodName.REMOVE_DISLIKE_REMOVE_ACTIVITY);
-            kafkaProducer.setProblemData(data);
-            problemRepository.save(problem);
-            return false;
-        }
+        boolean result = problem.getInteractions().setDislike(profile.getEmail(), profileRating);
+        checkAndSubscribe(problem, profile);
+        problem.calculateRating();
+        problemRepository.save(problem);
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_DISLIKE);
+        kafkaProducer.setProblemData(data);
+        return result;
     }
 
     @Override
@@ -168,36 +112,13 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean subscribe(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        if (!problem.getSubscribers().contains(profile.getEmail())) {
-            if (!profile.getActivities().containsKey(problemId)) {
-                ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.SUBSCRIBE);
-                kafkaProducer.setProblemData(data);
-            }
-            problem.addSubscriber(profile.getEmail());
-            problem.calculateRating();
-            problemRepository.save(problem);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    @Transactional
-    public boolean unsubscribe(String problemId) {
-        Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
-        ProfileDto profile = kafkaConsumer.getProfile();
-        if (problem.getSubscribers().contains(profile.getEmail())) {
-            if (profile.getActivities().containsKey(problemId) &&
-                    !profile.getActivities().get(problemId).getLiked() && !profile.getActivities().get(problemId).getDisliked()) {
-                ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.UNSUBSCRIBE);
-                kafkaProducer.setProblemData(data);
-            }
-            problem.removeSubscriber(profile.getEmail());
-            problem.calculateRating();
-            problemRepository.save(problem);
-            return true;
-        }
-        return false;
+        Double profileRating = profile.getStats().getRating();
+        boolean result = problem.getInteractions().setSubscription(profile.getEmail(), profileRating);
+        problem.calculateRating();
+        problemRepository.save(problem);
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.SUBSCRIBE);
+        kafkaProducer.setProblemData(data);
+        return result;
     }
 
     @Override
@@ -205,18 +126,13 @@ public class ProblemServiceImpl implements ProblemService {
     public boolean donate(String problemId, DonationDto amount) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        Donation donation = modelMapper.map(amount, Donation.class);
-        donation.setAmount(amount.getAmount());
-        donation.setUserId(profile.getEmail());
-        donation.setUserName(profile.getUsername());
-        problem.addDonation(donation);
+        problem.getInteractions().setDonation(profile.getEmail(), profile.getUsername(), amount.getAmount());
         problem.checkCurrentAward();
         problem.calculateRating();
+        checkAndSubscribe(problem, profile);
         problemRepository.save(problem);
-        if (!profile.getActivities().containsKey(problemId)) {
-            ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.DONATE);
-            kafkaProducer.setProblemData(data);
-        }
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.DONATE);
+        kafkaProducer.setProblemData(data);
         return true;
     }
 
@@ -225,7 +141,7 @@ public class ProblemServiceImpl implements ProblemService {
     public ProblemDto findProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDto profile = kafkaConsumer.getProfile();
-        ProblemServiceDataDto data =addDataToTransfer(profile, problem, ProblemMethodName.ADD_PROBLEM);
+        ProblemServiceDataDto data = addDataToTransfer(profile, problem, ProblemMethodName.ADD_PROBLEM);
         kafkaProducer.setProblemData(data);
         return modelMapper.map(problem, ProblemDto.class);
     }
@@ -272,7 +188,16 @@ public class ProblemServiceImpl implements ProblemService {
         } else
             throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "You are not author of that problem, or you have no roles to delete it");
     }
+
     private ProblemServiceDataDto addDataToTransfer(ProfileDto profile, Problem problem, ProblemMethodName methodName) {
-        return new ProblemServiceDataDto(profile.getEmail(), problem.getId(), problem.getAuthorId(),problem.getRating(), methodName, problem.getComments(), problem.getSolutions(), problem.getSubscribers(), problem.getCommunityNames());
+        Set<String> subscribers = problem.getInteractions().getSubscriptions().stream().map(ProfileDetails::getProfileId).collect(Collectors.toSet());
+        return new ProblemServiceDataDto(profile.getEmail(), problem.getId(), problem.getAuthorId(), problem.getRating(), methodName, problem.getComments(), problem.getSolutions(), subscribers, problem.getCommunityNames());
+    }
+
+    private void checkAndSubscribe(Problem problem, ProfileDto profile){
+        Set<String> problemSubscribers = problem.getInteractions().getSubscriptions().stream().map(ProfileDetails::getProfileId).collect(Collectors.toSet());
+        if (!problemSubscribers.contains(profile.getEmail())) {
+            problem.getInteractions().setSubscription(profile.getEmail(), profile.getStats().getRating());
+        }
     }
 }

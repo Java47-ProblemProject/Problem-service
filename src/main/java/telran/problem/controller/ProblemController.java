@@ -72,11 +72,6 @@ public class ProblemController {
         return problemService.subscribe(problemId);
     }
 
-    @PutMapping("/unsubscribeonproblem/{problemId}")
-    public boolean unsubscribe(@PathVariable String problemId) {
-        return problemService.unsubscribe(problemId);
-    }
-
     @PutMapping("/donate/{problemId}")
     public boolean donate(@PathVariable String problemId, @RequestBody DonationDto donation) {
         return problemService.donate(problemId, donation);
