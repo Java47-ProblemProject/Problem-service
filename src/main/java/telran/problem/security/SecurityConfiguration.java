@@ -1,5 +1,6 @@
 package telran.problem.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,15 +21,16 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         http.httpBasic(Customizer.withDefaults());
-        http.csrf(AbstractHttpConfigurer::disable);
+        http.csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(new CustomAuthenticationEntryPoint()));
         http.authorizeRequests(authorize -> authorize
 //                       //User section//
                         .requestMatchers(HttpMethod.PUT, "/problem/editproblem/{authorId}/{problemId}")
                             .access("@customSecurity.checkProblemAuthor(#problemId, #authorId)")
                         .requestMatchers(HttpMethod.DELETE,"/problem/deleteproblem/{authorId}/{problemId}")
                             .access("@customSecurity.checkProblemAuthor(#problemId, #authorId)")
-                        .requestMatchers(HttpMethod.DELETE, "/problem/deleteproblem/*")
-                            .access("hasRole('ADMINISTRATOR')")
+                        .requestMatchers(HttpMethod.DELETE, "problem/deleteproblem/**")
+                            .access("hasAnyAuthority('ADMINISTRATOR')")
                         .anyRequest()
                         .authenticated()
         );
