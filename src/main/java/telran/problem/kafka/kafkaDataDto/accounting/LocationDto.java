@@ -1,4 +1,4 @@
-package telran.problem.dto.accounting;
+package telran.problem.kafka.kafkaDataDto.accounting;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

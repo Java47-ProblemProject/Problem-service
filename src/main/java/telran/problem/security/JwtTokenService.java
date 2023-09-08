@@ -1,17 +1,17 @@
 package telran.problem.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +19,7 @@ public class JwtTokenService {
     @Value("${jwt.secret-key}")
     private String jwtSecretKey;
     private SecretKey jwtSecret;
-    private ModelMapper modelMapper;
+    private final Map<String, String> userTokenCache = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -32,11 +32,11 @@ public class JwtTokenService {
             Claims claims = Jwts.parserBuilder().setSigningKey(jwtSecret).build().parseClaimsJws(token).getBody();
             String encryptedEmail = claims.getSubject();
             if (claims.getExpiration().before(new Date())) {
-                return null;
+                return "";
             }
             return EmailEncryptionConfiguration.decryptAndDecodeUserId(encryptedEmail);
         } catch (Exception ex) {
-            return null;
+            return "";
         }
     }
 
@@ -52,11 +52,24 @@ public class JwtTokenService {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(jwtSecret).build().parseClaimsJws(token);
-            return true;
+            Claims claims = Jwts.parserBuilder().setSigningKey(jwtSecret).build().parseClaimsJws(token).getBody();
+            String email = claims.getSubject();
+            String cachedToken = userTokenCache.get(email);
+            if (cachedToken == null || !cachedToken.equals(token)) {
+                return false;
+            }
+            return !claims.getExpiration().before(new Date());
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    public void setCurrentProfileToken(String profileId, String token) {
+        this.userTokenCache.put(profileId, token);
+    }
+
+    public void deleteCurrentProfileToken(String profileId) {
+        this.userTokenCache.remove(profileId);
     }
 }
 

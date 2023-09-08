@@ -1,4 +1,4 @@
-package telran.problem.dto.kafkaData.SolutionDataDto;
+package telran.problem.kafka.kafkaDataDto.SolutionDataDto;
 
 public enum SolutionMethodName {
     ADD_SOLUTION,

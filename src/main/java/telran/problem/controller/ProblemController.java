@@ -19,6 +19,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/problem")
+@CrossOrigin(origins = "http://127.0.0.1:5173", allowedHeaders = "*")
 public class ProblemController {
     private final ProblemService problemService;
 

@@ -1,4 +1,4 @@
-package telran.problem.dto.kafkaData.SolutionDataDto;
+package telran.problem.kafka.kafkaDataDto.SolutionDataDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

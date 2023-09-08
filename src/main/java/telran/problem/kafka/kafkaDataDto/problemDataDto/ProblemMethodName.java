@@ -1,4 +1,4 @@
-package telran.problem.dto.kafkaData.problemDataDto;
+package telran.problem.kafka.kafkaDataDto.problemDataDto;
 
 public enum ProblemMethodName {
     ADD_PROBLEM,

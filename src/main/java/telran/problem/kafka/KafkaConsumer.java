@@ -1,22 +1,24 @@
-package telran.problem.configuration;
+package telran.problem.kafka;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.Transactional;
 import telran.problem.dao.ProblemCustomRepository;
 import telran.problem.dao.ProblemRepository;
-import telran.problem.dto.accounting.ProfileDto;
-import telran.problem.dto.kafkaData.commentDataDto.CommentMethodName;
-import telran.problem.dto.kafkaData.commentDataDto.CommentServiceDataDto;
-import telran.problem.dto.kafkaData.SolutionDataDto.SolutionMethodName;
-import telran.problem.dto.kafkaData.SolutionDataDto.SolutionServiceDataDto;
+import telran.problem.kafka.kafkaDataDto.SolutionDataDto.SolutionMethodName;
+import telran.problem.kafka.kafkaDataDto.SolutionDataDto.SolutionServiceDataDto;
+import telran.problem.kafka.kafkaDataDto.accounting.ProfileDto;
+import telran.problem.kafka.kafkaDataDto.commentDataDto.CommentMethodName;
+import telran.problem.kafka.kafkaDataDto.commentDataDto.CommentServiceDataDto;
+import telran.problem.kafka.kafkaDataDto.problemDataDto.ProblemServiceDataDto;
 import telran.problem.model.Problem;
 import telran.problem.model.ProfileDetails;
 import telran.problem.model.Status;
+import telran.problem.security.JwtTokenService;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -25,23 +27,36 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Configuration
 public class KafkaConsumer {
-    final ProblemRepository problemRepository;
-    final ProblemCustomRepository problemCustomRepository;
-    @Setter
-    ProfileDto profile;
+    private final ProblemRepository problemRepository;
+    private final ProblemCustomRepository problemCustomRepository;
+    private final JwtTokenService jwtTokenService;
+    private ProfileDto profile;
+    private String token;
 
     @Bean
     @Transactional
-    protected Consumer<ProfileDto> receiveProfile() {
+    protected Consumer<Map<String, ProfileDto>> receiveProfile() {
         return data -> {
-            if (data.getUsername().equals("DELETED_PROFILE")) {
-                //profile was deleted ->
-                problemCustomRepository.deleteProblemsByAuthorId(data.getEmail());
-                this.profile = new ProfileDto();
-            } else if (this.profile != null && data.getEmail().equals(profile.getEmail()) && !data.getUsername().equals(profile.getUsername())) {
-                problemCustomRepository.changeAuthorName(data.getEmail(), data.getUsername());
-                this.profile = data;
-            } else this.profile = data;
+            if (!data.isEmpty()) {
+                Map.Entry<String, ProfileDto> entry = data.entrySet().iterator().next();
+                if (entry.getValue().getUsername().equals("DELETED_PROFILE")) {
+                    //profile was deleted ->
+                    jwtTokenService.deleteCurrentProfileToken(entry.getValue().getEmail());
+                    problemCustomRepository.deleteProblemsByAuthorId(entry.getValue().getEmail());
+                    this.profile = null;
+                    this.token = null;
+                } else {
+                    if (this.profile != null && entry.getValue().getEmail().equals(this.profile.getEmail()) && !entry.getValue().getUsername().equals(this.profile.getUsername())) {
+                        problemCustomRepository.changeAuthorName(entry.getValue().getEmail(), entry.getValue().getUsername());
+                    }
+                    this.profile = entry.getValue();
+                    if (!entry.getKey().isEmpty()) {
+                        this.token = entry.getKey();
+                    }
+                    jwtTokenService.setCurrentProfileToken(this.profile.getEmail(), this.token);
+                    System.out.println("Token pushed - " + this.token);
+                }
+            }
         };
     }
 

@@ -1,18 +1,13 @@
 package telran.problem.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Service;
-import telran.problem.configuration.KafkaConsumer;
+import telran.problem.kafka.KafkaConsumer;
 import telran.problem.dao.ProblemRepository;
-import telran.problem.dto.accounting.ProfileDto;
+import telran.problem.kafka.kafkaDataDto.accounting.ProfileDto;
 import telran.problem.model.Problem;
 
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 @Service
 @RequiredArgsConstructor

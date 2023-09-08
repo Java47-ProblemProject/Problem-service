@@ -1,6 +1,5 @@
 package telran.problem.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,12 +16,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import telran.problem.configuration.KafkaConsumer;
-import telran.problem.dto.accounting.ProfileDto;
 import telran.problem.dto.exceptions.ExceptionDto;
+import telran.problem.kafka.KafkaConsumer;
+import telran.problem.kafka.kafkaDataDto.accounting.ProfileDto;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,7 +28,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtTokenService jwtTokenService;
-    final KafkaConsumer kafkaConsumer;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final KafkaConsumer kafkaConsumer;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain chain) throws ServletException, IOException {
@@ -40,20 +39,21 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             return;
         }
         String token = header.substring(7);
-        if (!jwtTokenService.validateToken(token)) {
-            ExceptionDto exceptionDto = new ExceptionDto(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", request);
-            exceptionDto.setMessage("Authentication failed. Please provide a valid authentication token.");
-            sendJsonResponse(response, exceptionDto);
-            return;
-        }
-        ProfileDto profile = kafkaConsumer.getProfile();
-        String email = jwtTokenService.extractEmailFromToken(token);
+        ProfileDto profile;
         try {
+            profile = kafkaConsumer.getProfile();
+            String email = jwtTokenService.extractEmailFromToken(token);
             String encryptedEmail = EmailEncryptionConfiguration.encryptAndEncodeUserId(email);
+            if (!jwtTokenService.validateToken(token)) {
+                ExceptionDto exceptionDto = new ExceptionDto(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", request);
+                exceptionDto.setMessage("Authentication failed. Please provide a valid authentication token.");
+                customAuthenticationEntryPoint.sendJsonResponse(response, exceptionDto);
+                return;
+            }
             if (!encryptedEmail.equals(profile.getEmail())) {
                 ExceptionDto exceptionDto = new ExceptionDto(HttpStatus.FORBIDDEN.value(), "Forbidden", request);
                 exceptionDto.setMessage("Access to this resource is forbidden for your current role or permissions.");
-                sendJsonResponse(response, exceptionDto);
+                customAuthenticationEntryPoint.sendJsonResponse(response, exceptionDto);
                 return;
             }
         } catch (Exception e) {
@@ -68,17 +68,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         chain.doFilter(request, response);
-    }
-
-    private void sendJsonResponse(@NotNull HttpServletResponse response, ExceptionDto exceptionDto) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String exceptionDtoJson = objectMapper.writeValueAsString(exceptionDto);
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        PrintWriter writer = response.getWriter();
-        writer.write(exceptionDtoJson);
-        writer.flush();
-        writer.close();
     }
 }
 
