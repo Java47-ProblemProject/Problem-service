@@ -9,16 +9,15 @@ import telran.problem.dao.ProblemCustomRepository;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.kafka.kafkaDataDto.SolutionDataDto.SolutionMethodName;
 import telran.problem.kafka.kafkaDataDto.SolutionDataDto.SolutionServiceDataDto;
-import telran.problem.kafka.kafkaDataDto.accounting.ProfileDto;
 import telran.problem.kafka.kafkaDataDto.commentDataDto.CommentMethodName;
 import telran.problem.kafka.kafkaDataDto.commentDataDto.CommentServiceDataDto;
-import telran.problem.kafka.kafkaDataDto.problemDataDto.ProblemServiceDataDto;
+import telran.problem.kafka.kafkaDataDto.profileDataDto.ProfileDataDto;
+import telran.problem.kafka.kafkaDataDto.profileDataDto.ProfileMethodName;
 import telran.problem.model.Problem;
 import telran.problem.model.ProfileDetails;
 import telran.problem.model.Status;
 import telran.problem.security.JwtTokenService;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -30,32 +29,39 @@ public class KafkaConsumer {
     private final ProblemRepository problemRepository;
     private final ProblemCustomRepository problemCustomRepository;
     private final JwtTokenService jwtTokenService;
-    private ProfileDto profile;
-    private String token;
+    private ProfileDataDto profile;
 
     @Bean
     @Transactional
-    protected Consumer<Map<String, ProfileDto>> receiveProfile() {
+    protected Consumer<ProfileDataDto> receiveProfile() {
         return data -> {
-            if (!data.isEmpty()) {
-                Map.Entry<String, ProfileDto> entry = data.entrySet().iterator().next();
-                if (entry.getValue().getUsername().equals("DELETED_PROFILE")) {
-                    //profile was deleted ->
-                    jwtTokenService.deleteCurrentProfileToken(entry.getValue().getEmail());
-                    problemCustomRepository.deleteProblemsByAuthorId(entry.getValue().getEmail());
-                    this.profile = null;
-                    this.token = null;
-                } else {
-                    if (this.profile != null && entry.getValue().getEmail().equals(this.profile.getEmail()) && !entry.getValue().getUsername().equals(this.profile.getUsername())) {
-                        problemCustomRepository.changeAuthorName(entry.getValue().getEmail(), entry.getValue().getUsername());
-                    }
-                    this.profile = entry.getValue();
-                    if (!entry.getKey().isEmpty()) {
-                        this.token = entry.getKey();
-                    }
-                    jwtTokenService.setCurrentProfileToken(this.profile.getEmail(), this.token);
-                    System.out.println("Token pushed - " + this.token);
-                }
+            ProfileMethodName methodName = data.getMethodName();
+            String userName = data.getUserName();
+            String email = data.getEmail();
+            //Double rating = data.getRating();
+            if (methodName.equals(ProfileMethodName.SET_PROFILE)) {
+                jwtTokenService.setCurrentProfileToken(data.getEmail(), data.getToken());
+                this.profile = data;
+                this.profile.setToken("");
+            }
+            if (methodName.equals(ProfileMethodName.UNSET_PROFILE)) {
+                jwtTokenService.deleteCurrentProfileToken(email);
+                this.profile = null;
+            }
+            if (methodName.equals(ProfileMethodName.UPDATED_PROFILE)){
+                this.profile = data;
+            }
+            if (methodName.equals(ProfileMethodName.EDIT_PROFILE_NAME)) {
+                problemCustomRepository.changeAuthorName(email, userName);
+                this.profile.setUserName(data.getUserName());
+            }
+            if (methodName.equals(ProfileMethodName.EDIT_PROFILE_EDUCATION)) {
+                //problemCustomRepository.setNewProfileRating(rating);
+            }
+            if (methodName.equals(ProfileMethodName.DELETE_PROFILE)) {
+                jwtTokenService.deleteCurrentProfileToken(email);
+                problemCustomRepository.deleteProblemsByAuthorId(email);
+                this.profile = null;
             }
         };
     }
@@ -72,7 +78,7 @@ public class KafkaConsumer {
                 problem.addComment(commentId);
                 Set<String> problemSubscribers = problem.getInteractions().getSubscriptions().stream().map(ProfileDetails::getProfileId).collect(Collectors.toSet());
                 if (!problemSubscribers.contains(profile.getEmail())) {
-                    problem.getInteractions().setSubscription(profile.getEmail(), profile.getStats().getRating());
+                    problem.getInteractions().setSubscription(profile.getEmail(), profile.getRating());
                 }
                 problem.calculateRating();
                 problemRepository.save(problem);
@@ -90,7 +96,6 @@ public class KafkaConsumer {
     @Transactional
     protected Consumer<SolutionServiceDataDto> receiveDataFromSolution() {
         return data -> {
-            String profileId = data.getProfileId();
             String problemId = data.getProblemId();
             SolutionMethodName methodName = data.getMethodName();
             String commentId = data.getSolutionId();

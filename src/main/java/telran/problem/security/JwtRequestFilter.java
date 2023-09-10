@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import telran.problem.dto.exceptions.ExceptionDto;
 import telran.problem.kafka.KafkaConsumer;
-import telran.problem.kafka.kafkaDataDto.accounting.ProfileDto;
+import telran.problem.kafka.kafkaDataDto.profileDataDto.ProfileDataDto;
 
 import java.io.IOException;
 import java.util.Set;
@@ -39,7 +39,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             return;
         }
         String token = header.substring(7);
-        ProfileDto profile;
+        ProfileDataDto profile;
         try {
             profile = kafkaConsumer.getProfile();
             String email = jwtTokenService.extractEmailFromToken(token);

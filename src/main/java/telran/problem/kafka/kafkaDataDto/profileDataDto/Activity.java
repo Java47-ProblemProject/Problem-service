@@ -1,11 +1,11 @@
-package telran.problem.kafka.kafkaDataDto.accounting;
+package telran.problem.kafka.kafkaDataDto.profileDataDto;
 
 import lombok.Getter;
 
 import java.util.Set;
 
 @Getter
-public class ActivityDto {
+public class Activity {
     protected String type;
     protected String problemId;
     protected Double rating;
