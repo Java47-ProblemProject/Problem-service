@@ -34,43 +34,41 @@ public class Interactions {
     }
 
     public boolean setLike(String profileId, Double profileRating) {
-        ProfileDetails profileDetails = new ProfileDetails(profileId, profileRating);
-        if (this.likes.contains(profileDetails)) {
-            this.likes.remove(profileDetails);
+        boolean isLiked = this.likes.stream().anyMatch(profileDetails -> profileDetails.getProfileId().equals(profileId));
+        if (isLiked) {
+            ProfileDetails profileToRemove = this.likes.stream()
+                    .filter(profileDetails -> profileDetails.getProfileId().equals(profileId))
+                    .findFirst()
+                    .get();
+            this.likes.remove(profileToRemove);
             this.totalLikes--;
-            this.likeWeight -= profileDetails.getProfileRating();
-            return false;
+            this.likeWeight -= profileToRemove.getProfileRating();
         } else {
-            if (this.dislikes.contains(profileDetails)) {
-                this.dislikes.remove(profileDetails);
-                this.totalDislikes--;
-                this.dislikeWeight -= profileDetails.getProfileRating();
-            }
-            this.likes.add(profileDetails);
+            ProfileDetails newLike = new ProfileDetails(profileId, profileRating);
+            this.likes.add(newLike);
             this.totalLikes++;
-            this.likeWeight += profileDetails.getProfileRating();
-            return true;
+            this.likeWeight += profileRating;
         }
+        return !isLiked;
     }
 
     public boolean setDislike(String profileId, Double profileRating) {
-        ProfileDetails profileDetails = new ProfileDetails(profileId, profileRating);
-        if (this.dislikes.contains(profileDetails)) {
-            this.dislikes.remove(profileDetails);
+        boolean isDisliked = this.dislikes.stream().anyMatch(profileDetails -> profileDetails.getProfileId().equals(profileId));
+        if (isDisliked) {
+            ProfileDetails profileToRemove = this.dislikes.stream()
+                    .filter(profileDetails -> profileDetails.getProfileId().equals(profileId))
+                    .findFirst()
+                    .get();
+            this.dislikes.remove(profileToRemove);
             this.totalDislikes--;
-            this.likeWeight -= profileDetails.getProfileRating();
-            return false;
+            this.dislikeWeight -= profileToRemove.getProfileRating();
         } else {
-            if (this.likes.contains(profileDetails)) {
-                this.likes.remove(profileDetails);
-                this.totalLikes--;
-                this.likeWeight -= profileDetails.getProfileRating();
-            }
-            this.dislikes.add(profileDetails);
+            ProfileDetails newDislike = new ProfileDetails(profileId, profileRating);
+            this.dislikes.add(newDislike);
             this.totalDislikes++;
-            this.dislikeWeight += profileDetails.getProfileRating();
-            return true;
+            this.dislikeWeight += profileRating;
         }
+        return !isDisliked;
     }
 
     public void setDonation(String profileId, String profileName, double amount) {

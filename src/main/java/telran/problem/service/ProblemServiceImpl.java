@@ -123,10 +123,10 @@ public class ProblemServiceImpl implements ProblemService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProblemDto findProblemById(String problemId) {
+    public ProblemDto getProblemById(String problemId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(ProblemNotFoundException::new);
         ProfileDataDto profile = kafkaConsumer.getProfile();
-        transferData(profile, problem, ProblemMethodName.ADD_PROBLEM);
+        transferData(profile, problem, ProblemMethodName.GET_PROBLEM);
         return modelMapper.map(problem, ProblemDto.class);
     }
 
@@ -140,7 +140,7 @@ public class ProblemServiceImpl implements ProblemService {
 
     @Override
     public Set<ProblemDto> findProblemsByProfileId(String profileId) {
-        return problemRepository.findAllByAuthorId(profileId)
+        return problemRepository.findAllByProfileId(profileId)
                 .map(p -> modelMapper.map(p, ProblemDto.class))
                 .collect(Collectors.toSet());
     }

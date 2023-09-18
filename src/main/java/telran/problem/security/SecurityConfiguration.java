@@ -31,6 +31,8 @@ public class SecurityConfiguration {
         http.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         http.authorizeRequests(authorize -> authorize
+                        .requestMatchers("/problem/getproblems")
+                        .permitAll()
 //                       //User section//
                         .requestMatchers(HttpMethod.PUT, "/problem/editproblem/{authorId}/{problemId}")
                             .access("@customSecurity.checkProblemAuthor(#problemId, #authorId)")
@@ -46,7 +48,7 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5173/", "http://127.0.0.1:5173"));
+        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5173/", "http://127.0.0.1:5173","https://j-a-n.netlify.app/", "https://j-a-n.netlify.app"));
         configuration.setAllowedMethods(List.of("POST", "PUT", "GET", "OPTIONS", "DELETE", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

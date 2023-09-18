@@ -70,12 +70,13 @@ public class Problem {
     }
 
     public void calculateRating() {
-        double reactionsWeight = this.interactions.getLikeWeight() - this.interactions.getDislikeWeight();
-        double commentsWeight = 0.1 * this.comments.size();
-        double subscribersWeight = 0.2 * this.interactions.getTotalSubscribers();
-        double solutionsWeight = 0.3 * this.solutions.size();
-        double donationsWeight = 0.5 * (this.interactions.getTotalDonations() + this.interactions.getDonations().stream().mapToDouble(Donation::getAmount).sum());
-        double newRating = reactionsWeight + subscribersWeight + donationsWeight + commentsWeight + solutionsWeight;
+        double likeWeight = interactions.getLikeWeight();
+        double dislikeWeight = interactions.getDislikeWeight();
+        double commentsWeight = 0.1 * comments.size();
+        double subscribersWeight = 0.2 * interactions.getTotalSubscribers();
+        double solutionsWeight = 0.3 * solutions.size();
+        double donationsWeight = 0.5 * (interactions.getTotalDonations() + interactions.getDonations().stream().mapToDouble(Donation::getAmount).sum());
+        double newRating = likeWeight - dislikeWeight + commentsWeight + subscribersWeight + solutionsWeight + donationsWeight;
         this.rating = Double.parseDouble(String.format("%.2f", newRating));
     }
 

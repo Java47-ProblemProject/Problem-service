@@ -18,9 +18,9 @@ public interface ProblemService {
     boolean addDisLike(String problemId);
     boolean subscribe(String problemId);
     boolean donate(String problemId, DonationDto donation);
-    ProblemDto findProblemById(String problemId);
-    public Set<ProblemDto> findProblemsByCommunities(Set<String> communities);
-    public Set<ProblemDto> findProblemsByProfileId(String profileId);
+    ProblemDto getProblemById(String problemId);
+    Set<ProblemDto> findProblemsByCommunities(Set<String> communities);
+    Set<ProblemDto> findProblemsByProfileId(String profileId);
     List<ProblemDto> getProblems();
     Double getCurrentAwardByProblemId(String problemId);
     ProblemDto deleteProblem(String problemId);

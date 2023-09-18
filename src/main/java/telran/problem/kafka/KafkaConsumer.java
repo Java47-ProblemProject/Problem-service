@@ -38,27 +38,19 @@ public class KafkaConsumer {
             ProfileMethodName methodName = data.getMethodName();
             String userName = data.getUserName();
             String email = data.getEmail();
-            //Double rating = data.getRating();
             if (methodName.equals(ProfileMethodName.SET_PROFILE)) {
                 jwtTokenService.setCurrentProfileToken(data.getEmail(), data.getToken());
                 this.profile = data;
                 this.profile.setToken("");
-            }
-            if (methodName.equals(ProfileMethodName.UNSET_PROFILE)) {
+            } else if (methodName.equals(ProfileMethodName.UNSET_PROFILE)) {
                 jwtTokenService.deleteCurrentProfileToken(email);
                 this.profile = null;
-            }
-            if (methodName.equals(ProfileMethodName.UPDATED_PROFILE)){
+            } else if (methodName.equals(ProfileMethodName.UPDATED_PROFILE)) {
                 this.profile = data;
-            }
-            if (methodName.equals(ProfileMethodName.EDIT_PROFILE_NAME)) {
+            } else if (methodName.equals(ProfileMethodName.EDIT_PROFILE_NAME)) {
                 problemCustomRepository.changeAuthorName(email, userName);
                 this.profile.setUserName(data.getUserName());
-            }
-            if (methodName.equals(ProfileMethodName.EDIT_PROFILE_EDUCATION)) {
-                //problemCustomRepository.setNewProfileRating(rating);
-            }
-            if (methodName.equals(ProfileMethodName.DELETE_PROFILE)) {
+            } else if (methodName.equals(ProfileMethodName.DELETE_PROFILE)) {
                 jwtTokenService.deleteCurrentProfileToken(email);
                 problemCustomRepository.deleteProblemsByAuthorId(email);
                 this.profile = null;
@@ -82,8 +74,7 @@ public class KafkaConsumer {
                 }
                 problem.calculateRating();
                 problemRepository.save(problem);
-            }
-            if (methodName.equals(CommentMethodName.DELETE_COMMENT)) {
+            } else if (methodName.equals(CommentMethodName.DELETE_COMMENT)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeComment(commentId);
                 problem.calculateRating();
@@ -105,8 +96,7 @@ public class KafkaConsumer {
                 problem.calculateRating();
                 problem.setStatus(Status.PENDING);
                 problemRepository.save(problem);
-            }
-            if (methodName.equals(SolutionMethodName.DELETE_SOLUTION) || methodName.equals(SolutionMethodName.DELETE_SOLUTION_AND_PROBLEM)) {
+            } else if (methodName.equals(SolutionMethodName.DELETE_SOLUTION) || methodName.equals(SolutionMethodName.DELETE_SOLUTION_AND_PROBLEM)) {
                 Problem problem = problemRepository.findById(problemId).get();
                 problem.removeSolution(commentId);
                 problem.calculateRating();

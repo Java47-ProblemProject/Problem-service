@@ -1,7 +1,6 @@
 package telran.problem.dto;
 
 import lombok.Getter;
-import telran.problem.model.Interactions;
 import telran.problem.model.Status;
 
 import java.time.LocalDateTime;
@@ -19,8 +18,8 @@ public class ProblemDto {
     protected Double currentAward;
     protected Double rating;
     protected Set<String> communityNames;
-    protected Interactions interactions;
+    protected InteractionsDto interactions;
     protected Set<String> comments;
     protected Set<String> solutions;
-    protected String type;
+    //protected String type;
 }

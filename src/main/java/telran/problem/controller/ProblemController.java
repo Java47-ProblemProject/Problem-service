@@ -50,7 +50,7 @@ public class ProblemController {
 
     @GetMapping("/getproblem/{problemId}")
     public ProblemDto getProblem(@PathVariable String problemId) {
-        return problemService.findProblemById(problemId);
+        return problemService.getProblemById(problemId);
     }
 
     @GetMapping("/getcomunityproblems")
