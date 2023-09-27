@@ -68,6 +68,10 @@ public class JwtTokenService {
         this.userTokenCache.put(profileId, token);
     }
 
+    public String getCurrentProfileToken(String profileId) {
+        return this.userTokenCache.get(profileId);
+    }
+
     public void deleteCurrentProfileToken(String profileId) {
         this.userTokenCache.remove(profileId);
     }

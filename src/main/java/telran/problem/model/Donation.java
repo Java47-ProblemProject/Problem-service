@@ -3,6 +3,8 @@ package telran.problem.model;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 @Getter
 @NoArgsConstructor
@@ -20,6 +22,7 @@ public class Donation {
         this.profileId = profileId;
         this.profileName = profileName;
         this.amount = amount;
-        this.dateDonated = LocalDateTime.now();
+        ZoneId jerusalemZone = ZoneId.of("Asia/Jerusalem");
+        this.dateDonated = LocalDateTime.now(ZoneOffset.UTC).atZone(jerusalemZone).toLocalDateTime();
     }
 }

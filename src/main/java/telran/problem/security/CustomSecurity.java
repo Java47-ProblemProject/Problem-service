@@ -1,6 +1,7 @@
 package telran.problem.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import telran.problem.dao.ProblemRepository;
 import telran.problem.dto.exceptions.WrongAuthorityException;
@@ -18,7 +19,7 @@ public class CustomSecurity {
 
     public boolean checkProblemAuthor(String problemId, String authorId) {
         Problem problem = problemRepository.findById(problemId).orElseThrow(NoSuchElementException::new);
-        ProfileDataDto profile = kafkaConsumer.getProfile();
+        ProfileDataDto profile = kafkaConsumer.getProfiles().get(SecurityContextHolder.getContext().getAuthentication().getName());
         if (authorId.equals(profile.getEmail()) && authorId.equals(problem.getAuthorId())){
             return true;
         }else{

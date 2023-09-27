@@ -14,14 +14,14 @@ public interface ProblemService {
     ProblemDto addProblem(CreateProblemDto problemDto);
     ProblemDto editProblem(EditProblemDto problem,String userId,String problemId);
     ProblemDto deleteProblem(String problemId, String userId);
-    boolean addLike(String problemId);
-    boolean addDisLike(String problemId);
-    boolean subscribe(String problemId);
-    boolean donate(String problemId, DonationDto donation);
+    ProblemDto addLike(String problemId);
+    ProblemDto addDisLike(String problemId);
+    ProblemDto subscribe(String problemId);
+    ProblemDto donate(String problemId, DonationDto donation);
     ProblemDto getProblemById(String problemId);
     Set<ProblemDto> findProblemsByCommunities(Set<String> communities);
     Set<ProblemDto> findProblemsByProfileId(String profileId);
-    List<ProblemDto> getProblems();
+    Set<ProblemDto> getProblems();
     Double getCurrentAwardByProblemId(String problemId);
     ProblemDto deleteProblem(String problemId);
 }

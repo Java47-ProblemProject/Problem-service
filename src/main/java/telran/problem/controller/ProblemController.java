@@ -39,12 +39,12 @@ public class ProblemController {
     }
 
     @PutMapping("/likeproblem/{problemId}")
-    public boolean likeProblem(@PathVariable String problemId) {
+    public ProblemDto likeProblem(@PathVariable String problemId) {
         return problemService.addLike(problemId);
     }
 
     @PutMapping("/dislikeproblem/{problemId}")
-    public boolean dislikeProblem(@PathVariable String problemId) {
+    public ProblemDto dislikeProblem(@PathVariable String problemId) {
         return problemService.addDisLike(problemId);
     }
 
@@ -64,17 +64,17 @@ public class ProblemController {
     }
 
     @GetMapping("/getproblems")
-    public List<ProblemDto> getProblems() {
+    public Set<ProblemDto> getProblems() {
         return problemService.getProblems();
     }
 
     @PutMapping("/subscribeonproblem/{problemId}")
-    public boolean subscribe(@PathVariable String problemId) {
+    public ProblemDto subscribe(@PathVariable String problemId) {
         return problemService.subscribe(problemId);
     }
 
     @PutMapping("/donate/{problemId}")
-    public boolean donate(@PathVariable String problemId, @RequestBody DonationDto donation) {
+    public ProblemDto donate(@PathVariable String problemId, @RequestBody DonationDto donation) {
         return problemService.donate(problemId, donation);
     }
 

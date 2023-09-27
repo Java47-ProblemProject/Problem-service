@@ -18,7 +18,9 @@ import telran.problem.model.ProfileDetails;
 import telran.problem.model.Status;
 import telran.problem.security.JwtTokenService;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -29,31 +31,37 @@ public class KafkaConsumer {
     private final ProblemRepository problemRepository;
     private final ProblemCustomRepository problemCustomRepository;
     private final JwtTokenService jwtTokenService;
-    private ProfileDataDto profile;
+    private final Map<String, ProfileDataDto> profiles = new ConcurrentHashMap<>();
 
     @Bean
     @Transactional
     protected Consumer<ProfileDataDto> receiveProfile() {
         return data -> {
-            ProfileMethodName methodName = data.getMethodName();
-            String userName = data.getUserName();
             String email = data.getEmail();
+            String userName = data.getUserName();
+            ProfileMethodName methodName = data.getMethodName();
+            ProfileDataDto profile = this.profiles.get(email);
+            if (!profiles.containsKey(email)) {
+                this.profiles.put(email, data);
+                profile = data;
+            }
             if (methodName.equals(ProfileMethodName.SET_PROFILE)) {
-                jwtTokenService.setCurrentProfileToken(data.getEmail(), data.getToken());
-                this.profile = data;
-                this.profile.setToken("");
+                //if (jwtTokenService.getCurrentProfileToken(email) == null) {
+                    jwtTokenService.setCurrentProfileToken(email, data.getToken());
+               // }
+                this.profiles.get(email).setToken("");
             } else if (methodName.equals(ProfileMethodName.UNSET_PROFILE)) {
                 jwtTokenService.deleteCurrentProfileToken(email);
-                this.profile = null;
+                this.profiles.remove(email);
             } else if (methodName.equals(ProfileMethodName.UPDATED_PROFILE)) {
-                this.profile = data;
+                this.profiles.put(email, profile);
             } else if (methodName.equals(ProfileMethodName.EDIT_PROFILE_NAME)) {
                 problemCustomRepository.changeAuthorName(email, userName);
-                this.profile.setUserName(data.getUserName());
+                this.profiles.get(email).setUserName(profile.getUserName());
             } else if (methodName.equals(ProfileMethodName.DELETE_PROFILE)) {
                 jwtTokenService.deleteCurrentProfileToken(email);
                 problemCustomRepository.deleteProblemsByAuthorId(email);
-                this.profile = null;
+                this.profiles.remove(email);
             }
         };
     }
@@ -62,6 +70,9 @@ public class KafkaConsumer {
     @Transactional
     protected Consumer<CommentServiceDataDto> receiveDataFromComment() {
         return data -> {
+            String profileId = data.getProfileId();
+            ProfileDataDto profile = this.profiles.get(profileId);
+
             String problemId = data.getProblemId();
             CommentMethodName methodName = data.getMethodName();
             String commentId = data.getCommentsId();
